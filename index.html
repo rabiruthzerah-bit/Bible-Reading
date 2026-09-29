@@ -11,14 +11,14 @@
 <style>
 :root{--bg:#f8f5ef;--card:#fffdf9;--ink:#1e2a3b;--muted:#6a7280;--line:#e7dfd0;--navy:#1f3a5f;--navy2:#2c4d7c;--gold:#a8842f;--soft:#f1ece1;--ok:#2f6f4f;--warn:#9a5b13;--bad:#8c2f39;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);padding:2rem 1.25rem 4rem;min-height:100vh}
+body{background:var(--page,var(--bg));color:var(--ink);font:15px/1.55 var(--sans);padding:2rem 1.25rem 4rem;min-height:100vh}
 .wrap{max-width:1120px;margin:0 auto}
 header{text-align:center;padding:1rem 0 1.6rem}
 .eyebrow{font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);font-weight:600}
 h1{font:600 clamp(2.1rem,5vw,3rem)/1.1 var(--serif);margin:.4rem 0 .5rem}
 .verse{font:italic 500 1.05rem var(--serif);color:var(--muted)}
 .rule{width:64px;height:2px;background:var(--gold);margin:1rem auto 0;border-radius:2px}
-.tabs{display:flex;justify-content:center;gap:.25rem;background:var(--soft);border:1px solid var(--line);padding:.25rem;border-radius:999px;width:max-content;max-width:100%;margin:0 auto 1.6rem}
+.tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:.25rem;background:var(--soft);border:1px solid var(--line);padding:.25rem;border-radius:999px;width:max-content;max-width:100%;margin:0 auto 1.6rem}
 .tab{border:0;background:none;font:500 .88rem var(--sans);color:var(--muted);padding:.55rem 1.3rem;border-radius:999px;cursor:pointer}
 .tab.on{background:var(--navy);color:var(--card)}
 .grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:1.5rem;align-items:start}
@@ -112,6 +112,12 @@ textarea{resize:vertical;min-height:60px}
 .bk input{width:auto;padding:0;margin:0;accent-color:var(--navy);flex:none}
 .quick{display:flex;flex-wrap:wrap;gap:.4rem;margin:.1rem 0 .5rem}
 .quick .chip{padding:.28rem .75rem;font-size:.75rem}
+.roleCard.sel{border-color:var(--gold);background:var(--soft);box-shadow:inset 0 0 0 1px var(--gold)}
+.dgc.mine{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 8px 24px rgba(30,42,59,.06)}
+/* Leader theme: navy dominant */
+body.leader{--page:#0e1f3f;--card:#183260;--ink:#eef2fa;--muted:#a9b8d3;--line:#33507f;--bg:#112a52;--soft:#213f73;--navy:#d9b65f;--navy2:#e8cb85;--gold:#d9b65f;--ok:#6fd0a0;--warn:#f2b866;--bad:#ff8f99;color-scheme:dark}
+body.leader .bar i{background:linear-gradient(90deg,#6f97d6,#d9b65f)}
+body.leader .card{box-shadow:0 8px 24px rgba(0,0,0,.28)}
 </style>
 </head>
 <body>
@@ -139,8 +145,8 @@ textarea{resize:vertical;min-height:60px}
     <h1 style="font-size:1.8rem">How will you use the tracker?</h1>
     <p class="sub">You can't switch this later without asking your DG leader.</p>
     <div class="roleGrid">
-      <div class="roleCard" data-role="member"><b>DG Member</b><span>Build your own reading plan, track daily progress, and see the leaderboard.</span></div>
-      <div class="roleCard" data-role="leader"><b>DG Leader</b><span>See every member's progress and encourage the group.</span></div>
+      <div class="roleCard" data-role="member"><b>DG Member</b><span>Join your DG, build your own reading plan, track daily progress, and see your group's leaderboard.</span></div>
+      <div class="roleCard" data-role="leader"><b>DG Leader</b><span>Start your DG, see every member's progress, and encourage the group.</span></div>
     </div>
   </div>
 </div>
@@ -158,10 +164,25 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
+<!-- ===================== DG SCREEN ===================== -->
+<div id="dgScreen" class="center hide">
+  <div class="card authCard" style="max-width:520px">
+    <div class="eyebrow" id="dgEyebrow">Discipleship Group</div>
+    <h1 style="font-size:1.8rem" id="dgTitle"></h1>
+    <p class="sub" id="dgText"></p>
+    <div id="dgLeaderBox" class="hide"><input id="dgIn" placeholder="e.g. Young Professionals DG" maxlength="40" autocomplete="off" style="text-align:center"></div>
+    <div id="dgMemberBox" class="hide"><div id="dgList" style="text-align:left"></div></div>
+    <button class="btn full" id="dgBtn">Continue</button>
+    <button class="signout hide" id="dgCancel" style="margin-top:.9rem">Cancel</button>
+    <p class="sub" id="dgMsg" style="margin:.8rem 0 0"></p>
+    <button class="signout" id="dgOut">Sign out</button>
+  </div>
+</div>
+
 <!-- ===================== APP ===================== -->
 <div id="app" class="hide">
 <div class="topbar">
-  <div class="who"><img id="whoImg" src="" alt=""><b id="whoName"></b><button class="signout" id="editName" title="Edit your name">Edit name</button></div>
+  <div class="who"><img id="whoImg" src="" alt=""><b id="whoName"></b><span id="whoDg" style="color:var(--muted);font-size:.78rem"></span><button class="signout" id="editName" title="Edit your name">Edit name</button></div>
   <button class="signout" id="signOut">Sign out</button>
 </div>
 <div class="wrap">
@@ -173,12 +194,13 @@ textarea{resize:vertical;min-height:60px}
 </header>
 
 <nav class="tabs" id="tabs">
-  <button class="tab on" data-tab="me" id="meTab">My Reading</button>
+  <button class="tab on" data-tab="dgs" id="dgsTab">DGs</button>
+  <button class="tab" data-tab="me" id="meTab">My Reading</button>
   <button class="tab" data-tab="board" id="boardTab">Leaderboard</button>
   <button class="tab hide" data-tab="leader" id="leaderTab">Leader Dashboard</button>
 </nav>
 
-<section id="meView" class="grid">
+<section id="meView" class="grid hide">
   <div>
     <div class="card">
       <h2>Create a Plan</h2>
@@ -222,9 +244,11 @@ textarea{resize:vertical;min-height:60px}
   <div id="plansCol"></div>
 </section>
 
+<section id="dgView" class="hide"></section>
+
 <section id="boardView" class="hide">
   <div class="card">
-    <h2>Leaderboard</h2>
+    <h2 id="boardTitle">Leaderboard</h2>
     <p class="sub">See who's reading consistently — and give someone a nudge.</p>
     <div id="boardRows"></div>
   </div>
@@ -277,7 +301,7 @@ const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deut
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S={tab:'me',uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+const S={tab:'dgs',editPlan:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
@@ -331,12 +355,13 @@ $('googleBtn').addEventListener('click',()=>{
 });
 $('signOut').addEventListener('click',()=>auth.signOut());
 
-const SCREENS=['authScreen','roleScreen','nameScreen','app'];
+const SCREENS=['authScreen','roleScreen','nameScreen','dgScreen','app'];
+function applyTheme(role){document.body.classList.toggle('leader',role==='leader')}
 function showScreen(id){SCREENS.forEach(x=>$(x).classList.toggle('hide',x!==id))}
 
 auth.onAuthStateChanged(async user=>{
   S.unsub.forEach(u=>u());S.unsub=[];
-  if(!user){resetNameScreen();showScreen('authScreen');return}
+  if(!user){applyTheme(null);resetNameScreen();showScreen('authScreen');return}
   S.uid=user.uid;
   showScreen('nameScreen');$('nameScreen').classList.add('hide'); // hide sign-in immediately while we check the account
   $('whoImg').src=user.photoURL||'';
@@ -350,12 +375,17 @@ auth.onAuthStateChanged(async user=>{
     return;
   }
   S.me=snap.data();
-  if(!S.me.nameSet){S._role=null;showScreen('nameScreen');$('nameIn').focus();return}
-  boot();
+  route();
 });
+function route(){
+  applyTheme(S.me.role);
+  if(!S.me.nameSet){S._role=null;showScreen('nameScreen');$('nameIn').focus();return}
+  if(!S.me.dgId){openDg(false);return}
+  boot();
+}
 
 document.querySelectorAll('.roleCard').forEach(c=>c.addEventListener('click',()=>{
-  S._role=c.dataset.role;
+  S._role=c.dataset.role;applyTheme(S._role);
   showScreen('nameScreen');$('nameIn').focus();
 }));
 
@@ -374,7 +404,7 @@ async function saveName(){
     }
     if(S._editing){
       resetNameScreen();showScreen('app');$('whoName').textContent=S.me.name;toast('Name updated.');
-    }else boot();
+    }else route();
   }catch(e){msg.textContent='Could not save your name. Please try again.'}
   $('nameBtn').disabled=false;
 }
@@ -395,30 +425,122 @@ $('nameCancel').addEventListener('click',()=>{resetNameScreen();showScreen('app'
 $('nameBtn').addEventListener('click',saveName);
 $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')saveName()});
 
+/* ---------------- DISCIPLESHIP GROUPS ---------------- */
+// A DG lives on its leader's user doc (dgName). The DG id is the leader's uid, so a DG can only ever have one leader.
+function groups(){
+  const all=Object.values(S.members);
+  return all.filter(m=>m.role==='leader'&&m.dgName).map(l=>({id:l.id,name:l.dgName,leader:l,members:all.filter(m=>m.role==='member'&&m.dgId===l.id)}));
+}
+function dgName(){const g=S.members[S.me&&S.me.dgId];return g&&g.dgName?g.dgName:''}
+async function loadUsers(){
+  const sn=await db.collection('users').get();
+  S.members={};sn.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
+}
+function renderDgPick(){
+  const gs=groups().sort((a,b)=>a.name.localeCompare(b.name));
+  if(!gs.length){$('dgList').innerHTML='<div class="empty">No DG has been set up yet.<br>Ask your DG leader to sign up first, then come back.</div>';return}
+  $('dgList').innerHTML=gs.map(g=>`<div class="roleCard ${S._dgPick===g.id?'sel':''}" data-dgpick="${esc(g.id)}" style="margin-bottom:.7rem"><b>${esc(g.name)}</b><span>Led by ${esc(g.leader.name||'Unnamed')} · ${g.members.length} member${g.members.length===1?'':'s'}</span></div>`).join('');
+}
+async function openDg(edit){
+  S._dgEdit=!!edit;S._dgPick=(S.me&&S.me.dgId)||null;
+  const leader=S.me.role==='leader';
+  showScreen('dgScreen');
+  $('dgMsg').textContent='';$('dgCancel').classList.toggle('hide',!edit);
+  $('dgLeaderBox').classList.toggle('hide',!leader);$('dgMemberBox').classList.toggle('hide',leader);
+  if(leader){
+    $('dgEyebrow').textContent=edit?'Your DG':'Discipleship Group';
+    $('dgTitle').textContent=edit?'Rename your DG':'Name your DG';
+    $('dgText').textContent='Give your group a name. Members will find your DG by this name and your name as its leader. A DG has only one leader.';
+    $('dgBtn').textContent=edit?'Save':'Continue';$('dgBtn').classList.remove('hide');
+    $('dgIn').value=S.me.dgName||'';$('dgIn').focus();
+  }else{
+    $('dgEyebrow').textContent=edit?'Your DG':'Discipleship Group';
+    $('dgTitle').textContent=edit?'Switch your DG':'Which DG are you in?';
+    $('dgText').textContent="Pick your group. Check the leader's name to be sure you're joining the right one.";
+    $('dgBtn').textContent='Join this DG';
+    $('dgList').innerHTML='<div class="empty">Loading DGs…</div>';
+    try{await loadUsers();renderDgPick()}
+    catch(e){$('dgList').innerHTML='<div class="empty">Could not load the DG list. Please refresh.</div>'}
+  }
+}
+async function saveDg(){
+  const msg=$('dgMsg'),leader=S.me.role==='leader';
+  msg.textContent='';$('dgBtn').disabled=true;
+  try{
+    const ref=db.collection('users').doc(S.uid);
+    if(leader){
+      const name=$('dgIn').value.trim().replace(/\s+/g,' ');
+      if(name.length<3){msg.textContent='Please enter a name for your DG (at least 3 characters).';return}
+      await loadUsers();
+      const taken=Object.values(S.members).some(m=>m.id!==S.uid&&m.role==='leader'&&(m.dgName||'').toLowerCase()===name.toLowerCase());
+      if(taken){msg.textContent='A DG with that name already exists. Please choose a different name.';return}
+      await ref.set({dgName:name,dgId:S.uid},{merge:true});
+      S.me={...S.me,dgName:name,dgId:S.uid};
+    }else{
+      if(!S._dgPick){msg.textContent='Please select your DG.';return}
+      await ref.set({dgId:S._dgPick},{merge:true});
+      S.me={...S.me,dgId:S._dgPick};
+    }
+    if(S._dgEdit){S._dgEdit=false;showScreen('app');renderTab();toast('Saved.')}
+    else boot();
+  }catch(e){msg.textContent='Could not save. Please try again.'}
+  finally{$('dgBtn').disabled=false}
+}
+$('dgBtn').addEventListener('click',saveDg);
+$('dgIn').addEventListener('keydown',e=>{if(e.key==='Enter')saveDg()});
+$('dgCancel').addEventListener('click',()=>{S._dgEdit=false;showScreen('app')});
+$('dgOut').addEventListener('click',()=>auth.signOut());
+$('dgList').addEventListener('click',e=>{
+  const c=e.target.closest('[data-dgpick]');if(!c)return;
+  S._dgPick=c.dataset.dgpick;renderDgPick();
+});
+function refreshWho(){
+  $('whoName').textContent=S.me.name||'';
+  const n=dgName();$('whoDg').textContent=n?'· '+n:'';
+}
+function renderDgs(){
+  const gs=groups().sort((a,b)=>((b.id===S.me.dgId)-(a.id===S.me.dgId))||a.name.localeCompare(b.name));
+  const isL=S.me.role==='leader';
+  let h=`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. You can open the dashboard of your own DG only.</p></div>`;
+  if(!gs.length)h+='<div class="card"><div class="empty">No DG has been set up yet.</div></div>';
+  h+=gs.map(g=>{
+    const mine=g.id===S.me.dgId,n=g.members.length;
+    const plans=g.members.flatMap(m=>S.allPlans[m.id]||[]),a=avgPct(plans);
+    const body=mine
+      ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Switch DG'}</button></div>`
+      :`<div class="sub" style="margin:.8rem 0 0">🔒 Only members of this DG can open its dashboard.</div>`;
+    return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b> · ${n} member${n===1?'':'s'}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
+  }).join('');
+  $('dgView').innerHTML=h;
+}
+function renderTab(){
+  refreshWho();
+  if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='leader')renderLeader();
+}
 function boot(){
   showScreen('app');
-  $('whoName').textContent=S.me.name||'';
+  refreshWho();
   const isLeader=S.me.role==='leader';
   $('leaderTab').classList.toggle('hide',!isLeader);
   buildBooks();$('pStart').value=iso(new Date());
-  setTab(isLeader?'leader':'me');
+  setTab('dgs'); // first thing everyone sees: the list of DGs
 
   // my plans (members and leaders)
   const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
     S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(S.tab==='me')renderMe();
+    if(S.tab==='me'&&!S.editPlan)renderMe();
   },()=>{});
   S.unsub.push(u1);
   // all users (for names/roles) — leader reads all, member reads all (needed for leaderboard names)
   const u2=db.collection('users').onSnapshot(s=>{
     S.members={};s.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
-    if(S.tab==='board')renderBoard();if(S.tab==='leader')renderLeader();
+    renderTab();
   },()=>{});
   S.unsub.push(u2);
   // all plans — leader reads all; members can read all too (rules allow it) for leaderboard math
   const u3=db.collection('plans').onSnapshot(s=>{
     S.allPlans={};s.docs.forEach(d=>{const p={id:d.id,...d.data()};(S.allPlans[p.uid]=S.allPlans[p.uid]||[]).push(p)});
-    if(S.tab==='board')renderBoard();if(S.tab==='leader')renderLeader();
+    renderTab();
   },()=>{});
   S.unsub.push(u3);
 }
@@ -527,6 +649,10 @@ function renderMe(){
   if(!ps.some(p=>p.id===S.sel))S.sel=ps[0].id;
   const p=ps.find(x=>x.id===S.sel),t=todayIdx(p),[st,cl]=status(p);
   const chips=ps.map(x=>`<button class="chip ${x.id===S.sel?'on':''}" data-sel="${x.id}">${esc(x.name)}</button>`).join('');
+  const editing=S.editPlan===p.id;
+  const headHtml=editing
+    ?`<div class="head"><div style="flex:1;min-width:220px"><label style="margin-top:0" for="ePName">Plan title</label><input id="ePName" value="${esc(p.name)}" maxlength="70"><label for="ePNotes">Notes (optional)</label><textarea id="ePNotes" maxlength="300" placeholder="Focus, prayer points, or questions to reflect on">${esc(p.notes||'')}</textarea><div style="margin-top:.8rem;display:flex;gap:.5rem"><button class="btn small" data-saveedit="${p.id}">Save changes</button><button class="btn ghost small" data-canceledit="1">Cancel</button></div></div><div class="pct">${pct(p)}%</div></div>`
+    :`<div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days${p.perDay?` · ${p.perDay} ch/day`:''}<span class="tag ${cl}">${st}</span></div></div><div class="pct">${pct(p)}%</div></div>`;
   let td='';
   const done=p.done||[];
   if(done.length>=p.days)td='<div class="today"><small>Well done</small><b>You have completed this plan.</b></div>';
@@ -537,20 +663,33 @@ function renderMe(){
     return `<button class="day ${d?'done':''} ${i===t?'now':''}" data-day="${i}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></button>`}).join('');
   $('plansCol').innerHTML=`<div class="chips">${chips}</div>
   <div class="card">
-    <div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days${p.perDay?` · ${p.perDay} ch/day`:''}<span class="tag ${cl}">${st}</span></div></div><div class="pct">${pct(p)}%</div></div>
+    ${headHtml}
     <div class="bar"><i style="width:${pct(p)}%"></i></div>
     <div class="sub" style="margin:.5rem 0 0">${done.length} of ${p.days} days completed</div>
-    ${p.notes?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
+    ${(!editing&&p.notes)?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
     ${td}
     <div class="days">${rows}</div>
-    <div style="margin-top:1.1rem;text-align:right">${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</div>
+    <div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap"><button class="btn ghost small" data-edit="${p.id}">✎ Edit title &amp; notes</button><span>${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</span></div>
   </div>`;
 }
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke]');if(!t)return;
+  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit]');if(!t)return;
   if(t.dataset.tab)return setTab(t.dataset.tab);
-  if(t.dataset.sel){S.sel=t.dataset.sel;S.del=null;return renderMe()}
+  if(t.dataset.opendg)return setTab(S.me.role==='leader'?'leader':'board');
+  if(t.dataset.dgedit)return openDg(true);
+  if(t.dataset.edit){S.editPlan=t.dataset.edit;S.del=null;return renderMe()}
+  if(t.dataset.canceledit){S.editPlan=null;return renderMe()}
+  if(t.dataset.saveedit){
+    const nm=$('ePName').value.trim();
+    if(!nm)return toast('Plan title cannot be empty.');
+    try{
+      await db.collection('plans').doc(t.dataset.saveedit).update({name:nm,notes:$('ePNotes').value.trim()});
+      S.editPlan=null;renderMe();toast('Plan updated.');
+    }catch(err){toast('Could not save changes. Please try again.')}
+    return;
+  }
+  if(t.dataset.sel){S.sel=t.dataset.sel;S.del=null;S.editPlan=null;return renderMe()}
   if(t.dataset.cancel){S.del=null;return renderMe()}
   if(t.dataset.del){
     if(S.del!==t.dataset.del){S.del=t.dataset.del;return renderMe()}
@@ -568,7 +707,8 @@ document.addEventListener('click',async e=>{
 
 /* ---------------- LEADERBOARD ---------------- */
 function renderBoard(){
-  const rows=Object.values(S.members).filter(m=>m.role==='member'||m.role==='leader').map(m=>({m,plans:S.allPlans[m.id]||[]}))
+  $('boardTitle').textContent='Leaderboard'+(dgName()?' · '+dgName():'');
+  const rows=Object.values(S.members).filter(m=>(m.role==='member'||m.role==='leader')&&m.dgId===S.me.dgId).map(m=>({m,plans:S.allPlans[m.id]||[]}))
     .map(x=>({...x,avg:avgPct(x.plans),active:x.plans.length}))
     .sort((a,b)=>b.avg-a.avg);
   if(!rows.length){$('boardRows').innerHTML='<div class="empty">Nobody has started a plan yet.</div>';return}
@@ -587,10 +727,10 @@ function renderBoard(){
 
 /* ---------------- LEADER DASHBOARD ---------------- */
 function renderLeader(){
-  const rows=Object.values(S.members).filter(m=>m.role==='member').map(m=>({m,plans:S.allPlans[m.id]||[]})).sort((a,b)=>(a.m.name||'').localeCompare(b.m.name||''));
+  const rows=Object.values(S.members).filter(m=>m.role==='member'&&m.dgId===S.me.dgId).map(m=>({m,plans:S.allPlans[m.id]||[]})).sort((a,b)=>(a.m.name||'').localeCompare(b.m.name||''));
   const all=rows.flatMap(r=>r.plans),avg=all.length?Math.round(all.reduce((s,p)=>s+pct(p),0)/all.length):0;
   const needs=rows.filter(r=>r.plans.some(p=>status(p)[1]==='bad'||status(p)[1]==='warn')).length;
-  let h=`<div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
+  let h=`<h2 style="margin-bottom:1rem">${esc(dgName())}</h2><div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
   if(!rows.length)h+='<div class="card"><div class="empty">No member has created a plan yet.<br>Progress will appear here as your group begins reading.</div></div>';
   rows.forEach(r=>{
     h+=`<div class="card mem"><h3>${esc(r.m.name||'Unnamed member')}<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button></h3>`+
@@ -609,7 +749,8 @@ function setTab(t){
   $('meView').classList.toggle('hide',t!=='me');
   $('boardView').classList.toggle('hide',t!=='board');
   $('leaderView').classList.toggle('hide',t!=='leader');
-  if(t==='board')renderBoard();if(t==='leader')renderLeader();if(t==='me')renderMe();
+  $('dgView').classList.toggle('hide',t!=='dgs');
+  if(t==='me')renderMe();else renderTab();
 }
 
 /* ---------------- POKE ---------------- */
