@@ -104,6 +104,14 @@ textarea{resize:vertical;min-height:60px}
 .lbsub{font-size:.75rem;color:var(--muted)}
 .lbbar{width:110px}
 .poke{font-size:.76rem;padding:.35rem .8rem}
+.books{max-height:250px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:.3rem .4rem .5rem}
+.bkgrp{font:600 .68rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);padding:.6rem .3rem .2rem}
+.bkgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
+.bk{display:flex;align-items:center;gap:.5rem;margin:0;padding:.32rem .4rem;font:500 .85rem var(--sans);letter-spacing:0;text-transform:none;color:var(--ink);cursor:pointer;border-radius:6px}
+.bk:hover{background:var(--soft)}
+.bk input{width:auto;padding:0;margin:0;accent-color:var(--navy);flex:none}
+.quick{display:flex;flex-wrap:wrap;gap:.4rem;margin:.1rem 0 .5rem}
+.quick .chip{padding:.28rem .75rem;font-size:.75rem}
 </style>
 </head>
 <body>
@@ -176,8 +184,17 @@ textarea{resize:vertical;min-height:60px}
       <p class="sub">Design a reading rhythm that fits your season.</p>
       <label for="pName">Plan title</label>
       <input id="pName" placeholder="e.g. The Gospel of John" maxlength="70">
-      <label for="pBook">Book of the Bible</label>
-      <select id="pBook"></select>
+      <div id="bookBox">
+        <label>Books of the Bible</label>
+        <div class="quick" id="bkQuick">
+          <button type="button" class="chip" data-q="ot">Old Testament</button>
+          <button type="button" class="chip" data-q="nt">New Testament</button>
+          <button type="button" class="chip" data-q="all">Whole Bible</button>
+          <button type="button" class="chip" data-q="none">Clear</button>
+        </div>
+        <div class="books" id="bookList"></div>
+      </div>
+      <label class="bk" style="margin-top:.7rem"><input type="checkbox" id="pCustom"> Custom / topical reading (no specific book)</label>
       <div class="row" id="rangeRow">
         <div><label for="pFrom">From chapter</label><input id="pFrom" type="number" min="1" value="1"></div>
         <div><label for="pTo">To chapter</label><input id="pTo" type="number" min="1" value="1"></div>
@@ -265,13 +282,36 @@ function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show')
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
 function dayOf(p,i){const d=new Date(p.start+'T00:00');d.setDate(d.getDate()+i);return d}
 function todayIdx(p){const a=new Date(p.start+'T00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((b-a)/864e5)}
-function reading(p,i){
-  if(!p.book)return 'Day '+(i+1)+' reading';
-  if(p.perDay){const a=p.from+i*p.perDay,b=Math.min(p.to,a+p.perDay-1);return a>p.to?'Rest & reflection':(a===b?`${p.book} ${a}`:`${p.book} ${a}–${b}`)}
-  const n=p.to-p.from+1,a=p.from+Math.floor(i*n/p.days),b=p.from+Math.floor((i+1)*n/p.days)-1;
-  return b<a?'Rest & reflection':(a===b?`${p.book} ${a}`:`${p.book} ${a}–${b}`);
+function segsOf(p){return p.segs||(p.book?[{b:p.book,f:p.from,t:p.to}]:[])}
+function chapsOf(p){
+  if(p._c)return p._c;
+  const c=[];segsOf(p).forEach(s=>{for(let k=s.f;k<=s.t;k++)c.push([s.b,k])});
+  return p._c=c;
 }
-function portion(p){return p.book?(p.from===p.to?`${p.book} ${p.from}`:`${p.book} ${p.from}–${p.to}`):'Custom reading'}
+function fmtSlice(sl){
+  const out=[];let i=0;
+  while(i<sl.length){
+    let j=i;while(j+1<sl.length&&sl[j+1][0]===sl[i][0])j++;
+    const a=sl[i][1],b=sl[j][1];
+    out.push(a===b?`${sl[i][0]} ${a}`:`${sl[i][0]} ${a}–${b}`);i=j+1;
+  }
+  return out.join('; ');
+}
+function reading(p,i){
+  const c=chapsOf(p),n=c.length;
+  if(!n)return 'Day '+(i+1)+' reading';
+  let a,b;
+  if(p.perDay){a=i*p.perDay;b=Math.min(n-1,a+p.perDay-1)}
+  else{a=Math.floor(i*n/p.days);b=Math.floor((i+1)*n/p.days)-1}
+  return (b<a||a>=n)?'Rest & reflection':fmtSlice(c.slice(a,b+1));
+}
+function portion(p){
+  const sg=segsOf(p);
+  if(!sg.length)return 'Custom reading';
+  if(sg.length===1){const s=sg[0];return s.f===s.t?`${s.b} ${s.f}`:`${s.b} ${s.f}–${s.t}`}
+  const names=sg.map(x=>x.b);
+  return names.length<=3?names.join(', '):`${names.slice(0,2).join(', ')} + ${names.length-2} more`;
+}
 function status(p){
   const done=(p.done||[]).length,t=todayIdx(p),exp=Math.max(0,Math.min(p.days,t+1));
   if(done>=p.days)return['Completed','ok'];
@@ -343,8 +383,7 @@ function boot(){
   $('whoName').textContent=S.me.name||'';
   const isLeader=S.me.role==='leader';
   $('leaderTab').classList.toggle('hide',!isLeader);
-  $('pBook').innerHTML=BOOKS.map(b=>`<option>${b[0]}</option>`).join('')+'<option value="">Custom / topical reading</option>';
-  $('pBook').value='John';fillBook();$('pStart').value=iso(new Date());
+  buildBooks();$('pStart').value=iso(new Date());
   setTab(isLeader?'leader':'me');
 
   // my plans (members and leaders)
@@ -368,58 +407,95 @@ function boot(){
 }
 
 /* ---------------- MY READING ---------------- */
-function fillBook(){
-  const b=BOOKS.find(x=>x[0]===$('pBook').value);
-  $('rangeRow').classList.toggle('hide',!b);
-  $('modeRow').classList.toggle('hide',!b);
-  if(!b)$('pMode').value='days';
-  if(b){$('pFrom').max=b[1];$('pTo').max=b[1];$('pFrom').value=1;$('pTo').value=b[1]}
+const NT_AT=BOOKS.findIndex(b=>b[0]==='Matthew');
+function buildBooks(){
+  const g=l=>l.map(b=>`<label class="bk"><input type="checkbox" value="${esc(b[0])}"> ${esc(b[0])}</label>`).join('');
+  $('bookList').innerHTML=`<div class="bkgrp">Old Testament</div><div class="bkgrid">${g(BOOKS.slice(0,NT_AT))}</div><div class="bkgrp">New Testament</div><div class="bkgrid">${g(BOOKS.slice(NT_AT))}</div>`;
+  $('pCustom').checked=false;S._single=null;
+  setBooks(['John']);
+}
+function setBooks(names){$('bookList').querySelectorAll('input').forEach(i=>i.checked=names.includes(i.value));onBooks()}
+function selBooks(){
+  const on=[...$('bookList').querySelectorAll('input:checked')].map(i=>i.value);
+  return BOOKS.filter(b=>on.includes(b[0]));
+}
+function onBooks(){
+  const custom=$('pCustom').checked,sel=selBooks();
+  $('bookBox').classList.toggle('hide',custom);
+  $('modeRow').classList.toggle('hide',custom);
+  if(custom)$('pMode').value='days';
+  const single=!custom&&sel.length===1;
+  $('rangeRow').classList.toggle('hide',!single);
+  const key=single?sel[0][0]:null;
+  if(single&&key!==S._single){$('pFrom').max=sel[0][1];$('pTo').max=sel[0][1];$('pFrom').value=1;$('pTo').value=sel[0][1]}
+  S._single=key;
   updateMode();
 }
 function updateMode(){
-  const perday=$('pMode').value==='perday';
+  const perday=$('pMode').value==='perday'&&!$('pCustom').checked;
   $('daysBox').classList.toggle('hide',perday);
   $('perBox').classList.toggle('hide',!perday);
   updateCalc();
 }
+function planSegs(){ // returns {segs, error}
+  const sel=selBooks();
+  if(!sel.length)return{error:'Please choose at least one book.'};
+  if(sel.length===1){
+    const bk=sel[0],from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
+    if(!(from>=1&&to>=from&&to<=bk[1]))return{error:`${bk[0]} has ${bk[1]} chapters; please check your range.`};
+    return{segs:[{b:bk[0],f:from,t:to}]};
+  }
+  return{segs:sel.map(b=>({b:b[0],f:1,t:b[1]}))};
+}
 function updateCalc(){
-  const bk=BOOKS.find(x=>x[0]===$('pBook').value),el=$('calc');
-  if(!bk){el.textContent='';return}
-  const from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
-  if(!(from>=1&&to>=from&&to<=bk[1])){el.textContent='';return}
-  const n=to-from+1;
+  const el=$('calc');
+  if($('pCustom').checked){el.textContent='';return}
+  const r=planSegs();
+  if(r.error){el.textContent=selBooks().length?'':'Choose at least one book to begin.';return}
+  const n=r.segs.reduce((t,x)=>t+x.t-x.f+1,0),k=r.segs.length;
+  const head=`${k} book${k===1?'':'s'} · ${n} chapter${n===1?'':'s'}. `;
   if($('pMode').value==='perday'){
     const per=parseInt($('pPer').value,10);
-    if(!(per>=1)){el.textContent='';return}
+    if(!(per>=1)){el.textContent=head;return}
     const d=Math.ceil(n/per);
-    el.textContent=`${n} chapter${n===1?'':'s'} at ${per} per day = ${d} day${d===1?'':'s'}.`;
+    el.textContent=head+`At ${per} per day = ${d} day${d===1?'':'s'}.`;
   }else{
     const d=parseInt($('pDays').value,10);
-    if(!(d>=1)){el.textContent='';return}
-    const r=n/d;
-    el.textContent=`About ${r%1===0?r:r.toFixed(1)} chapter${r===1?'':'s'} per day.`;
+    if(!(d>=1)){el.textContent=head;return}
+    const q=n/d;
+    el.textContent=head+`About ${q%1===0?q:q.toFixed(1)} chapter${q===1?'':'s'} per day.`;
   }
 }
-$('pBook').addEventListener('change',fillBook);
+$('bookList').addEventListener('change',onBooks);
+$('pCustom').addEventListener('change',onBooks);
 $('pMode').addEventListener('change',updateMode);
+$('bkQuick').addEventListener('click',e=>{
+  const q=e.target.closest('[data-q]');if(!q)return;
+  const all=BOOKS.map(b=>b[0]);
+  setBooks(q.dataset.q==='ot'?all.slice(0,NT_AT):q.dataset.q==='nt'?all.slice(NT_AT):q.dataset.q==='all'?all:[]);
+});
 ['pFrom','pTo','pDays','pPer'].forEach(id=>$(id).addEventListener('input',updateCalc));
 
 async function create(){
   const msg=$('msg'),name=$('pName').value.trim(),start=$('pStart').value;
-  const bk=BOOKS.find(x=>x[0]===$('pBook').value);
-  let from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
-  const perday=!!bk&&$('pMode').value==='perday';
-  let days=parseInt($('pDays').value,10),per=parseInt($('pPer').value,10);
+  const custom=$('pCustom').checked;
+  let segs=[],n=0;
   if(!name)return msg.textContent='Please give your plan a title.';
-  if(bk&&!(from>=1&&to>=from&&to<=bk[1]))return msg.textContent=`${bk[0]} has ${bk[1]} chapters; please check your range.`;
+  if(!custom){
+    const r=planSegs();
+    if(r.error)return msg.textContent=r.error;
+    segs=r.segs;n=segs.reduce((t,x)=>t+x.t-x.f+1,0);
+  }
+  const perday=!custom&&$('pMode').value==='perday';
+  let days=parseInt($('pDays').value,10);const per=parseInt($('pPer').value,10);
   if(perday){
     if(!(per>=1))return msg.textContent='Chapters per day must be at least 1.';
-    days=Math.ceil((to-from+1)/per);
+    days=Math.ceil(n/per);
   }
   if(!(days>=1&&days<=366))return msg.textContent=perday?'That pace makes a plan longer than 366 days. Try more chapters per day.':'Days must be between 1 and 366.';
   if(!start)return msg.textContent='Please choose a start date.';
   const p={uid:S.uid,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
-  if(bk){p.book=bk[0];p.from=from;p.to=to}
+  if(segs.length)p.segs=segs;
   if(perday)p.perDay=per;
   msg.textContent='';$('create').disabled=true;
   try{await db.collection('plans').add(p);$('pName').value='';$('pNotes').value=''}
