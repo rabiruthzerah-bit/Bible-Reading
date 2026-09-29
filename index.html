@@ -148,11 +148,12 @@ textarea{resize:vertical;min-height:60px}
 <!-- ===================== NAME SCREEN ===================== -->
 <div id="nameScreen" class="center hide">
   <div class="card authCard" style="max-width:480px">
-    <div class="eyebrow">Last step</div>
-    <h1 style="font-size:1.8rem">What should we call you?</h1>
+    <div class="eyebrow" id="nameEyebrow">Last step</div>
+    <h1 style="font-size:1.8rem" id="nameTitle">What should we call you?</h1>
     <p class="sub">Type the name you prefer to be called. Please use your real preferred name, not a creative nickname, so everyone in the group can recognize each other.</p>
     <input id="nameIn" placeholder="e.g. Mark" maxlength="30" autocomplete="off" style="text-align:center">
     <button class="btn full" id="nameBtn">Continue</button>
+    <button class="signout hide" id="nameCancel" style="margin-top:.9rem">Cancel</button>
     <p class="sub" id="nameMsg" style="margin:.8rem 0 0"></p>
   </div>
 </div>
@@ -160,7 +161,7 @@ textarea{resize:vertical;min-height:60px}
 <!-- ===================== APP ===================== -->
 <div id="app" class="hide">
 <div class="topbar">
-  <div class="who"><img id="whoImg" src="" alt=""><b id="whoName"></b></div>
+  <div class="who"><img id="whoImg" src="" alt=""><b id="whoName"></b><button class="signout" id="editName" title="Edit your name">Edit name</button></div>
   <button class="signout" id="signOut">Sign out</button>
 </div>
 <div class="wrap">
@@ -335,7 +336,7 @@ function showScreen(id){SCREENS.forEach(x=>$(x).classList.toggle('hide',x!==id))
 
 auth.onAuthStateChanged(async user=>{
   S.unsub.forEach(u=>u());S.unsub=[];
-  if(!user){showScreen('authScreen');return}
+  if(!user){resetNameScreen();showScreen('authScreen');return}
   S.uid=user.uid;
   showScreen('nameScreen');$('nameScreen').classList.add('hide'); // hide sign-in immediately while we check the account
   $('whoImg').src=user.photoURL||'';
@@ -371,10 +372,26 @@ async function saveName(){
       await ref.set({name,nameSet:true,fullName:S.me.fullName||S.me.name||''},{merge:true});
       S.me={...S.me,name,nameSet:true};
     }
-    boot();
+    if(S._editing){
+      resetNameScreen();showScreen('app');$('whoName').textContent=S.me.name;toast('Name updated.');
+    }else boot();
   }catch(e){msg.textContent='Could not save your name. Please try again.'}
   $('nameBtn').disabled=false;
 }
+function resetNameScreen(){
+  S._editing=false;
+  $('nameEyebrow').textContent='Last step';$('nameTitle').textContent='What should we call you?';
+  $('nameBtn').textContent='Continue';$('nameCancel').classList.add('hide');$('nameIn').value='';$('nameMsg').textContent='';
+}
+function openNameEdit(){
+  S._editing=true;S._role=null;
+  $('nameEyebrow').textContent='Your name';$('nameTitle').textContent='Edit your name';
+  $('nameBtn').textContent='Save';$('nameCancel').classList.remove('hide');$('nameMsg').textContent='';
+  $('nameIn').value=S.me.name||'';
+  showScreen('nameScreen');$('nameIn').focus();$('nameIn').select();
+}
+$('editName').addEventListener('click',openNameEdit);
+$('nameCancel').addEventListener('click',()=>{resetNameScreen();showScreen('app')});
 $('nameBtn').addEventListener('click',saveName);
 $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')saveName()});
 
@@ -551,17 +568,17 @@ document.addEventListener('click',async e=>{
 
 /* ---------------- LEADERBOARD ---------------- */
 function renderBoard(){
-  const rows=Object.values(S.members).filter(m=>m.role==='member').map(m=>({m,plans:S.allPlans[m.id]||[]}))
+  const rows=Object.values(S.members).filter(m=>m.role==='member'||m.role==='leader').map(m=>({m,plans:S.allPlans[m.id]||[]}))
     .map(x=>({...x,avg:avgPct(x.plans),active:x.plans.length}))
     .sort((a,b)=>b.avg-a.avg);
-  if(!rows.length){$('boardRows').innerHTML='<div class="empty">No members have started a plan yet.</div>';return}
+  if(!rows.length){$('boardRows').innerHTML='<div class="empty">Nobody has started a plan yet.</div>';return}
   const medals=['🥇','🥈','🥉'];
   $('boardRows').innerHTML=rows.map((r,i)=>{
     const mine=r.m.id===S.uid;
     return `<div class="lbrow">
       <div class="rank">${medals[i]||(i+1)}</div>
       <img src="${esc(r.m.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
-      <div style="flex:1"><div class="lbname">${esc(r.m.name)}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${r.active} plan${r.active===1?'':'s'} · ${r.avg}% average</div></div>
+      <div style="flex:1"><div class="lbname">${esc(r.m.name)}${r.m.role==='leader'?' <span class="tag warn">leader</span>':''}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${r.active} plan${r.active===1?'':'s'} · ${r.avg}% average</div></div>
       <div class="lbbar bar"><i style="width:${r.avg}%"></i></div>
       ${mine?'':`<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button>`}
     </div>`;
