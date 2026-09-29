@@ -280,8 +280,9 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
 
 <section id="globalView" class="hide">
   <div class="card">
-    <h2>Global Leaderboard</h2>
-    <p class="sub">Everyone using the tracker, across every DG — members and leaders together. Ranked by average plan completion. Only names, DGs and progress totals are shown here.</p>
+    <h2 id="gTitle">Global Leaderboard</h2>
+    <p class="sub" id="gSub"></p>
+    <div class="chips" id="gChips"></div>
     <div id="globalRows"></div>
   </div>
 </section>
@@ -334,7 +335,7 @@ const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deut
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S={audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+const S={gTab:'people',viewDg:null,aEdit:null,aDel:null,audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
@@ -569,14 +570,14 @@ function renderDgs(){
   if(r&&!isL)banner=r.status==='pending'
     ?`<div class="card" style="border-color:var(--gold)"><b>Request pending</b><div class="sub" style="margin:.3rem 0 .8rem">You asked to join <b>${esc(r.toDgName)}</b> (led by ${esc(r.toLeaderName)}). You stay in your current DG until they accept.</div><button class="btn ghost small" data-cancelreq="1">Cancel request</button></div>`
     :`<div class="card" style="border-color:var(--bad)"><b>Request declined</b><div class="sub" style="margin:.3rem 0 .8rem">${esc(r.toLeaderName)} didn't accept your request to join ${esc(r.toDgName)}.</div><button class="btn ghost small" data-cancelreq="1">Dismiss</button></div>`;
-  let h=banner+`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. You can open the dashboard of your own DG only. To see how everyone is doing, check the Global Leaderboard.</p></div>`;
+  let h=banner+`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. Open any DG to see how its members are reading; only your own DG's dashboard shows full plan details.</p></div>`;
   if(!gs.length)h+='<div class="card"><div class="empty">No DG has been set up yet.</div></div>';
   h+=gs.map(g=>{
     const mine=g.id===S.me.dgId,n=g.members.length;
     const plans=g.members.flatMap(m=>S.allPlans[m.id]||[]),a=avgPct(plans);
     const body=mine
       ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}${isL&&S.requests.length?` · <b>${S.requests.length} join request${S.requests.length===1?'':'s'}</b>`:''}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Request to switch DG'}</button></div>`
-      :`<div class="sub" style="margin:.8rem 0 0">🔒 Only members of this DG can open its dashboard.</div>`;
+      :(()=>{const gg=globalGroups().find(x=>x.id===g.id);return gg?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${gg.avg}%"></i></div><div class="sub" style="margin:0 0 1rem">${gg.avg}% average completion · ${gg.reading} of ${gg.rows.length} reading · ${gg.plans} plan${gg.plans===1?'':'s'}</div><button class="btn small" data-gopen="${esc(g.id)}">View progress</button>`:`<div class="sub" style="margin:.8rem 0 0">No progress shared yet.</div>`})();
     return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b>${mine?` · ${n} member${n===1?'':'s'}`:''}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
   }).join('');
   $('dgView').innerHTML=h;
@@ -584,7 +585,7 @@ function renderDgs(){
 function renderTab(){
   refreshWho();
   if(S.me.role==='leader')$('leaderTab').textContent='Leader Dashboard'+(S.requests.length?` (${S.requests.length})`:'');
-  if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='global')renderGlobal();else if(S.tab==='leader')renderLeader();
+  if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='global')renderGlobal();else if(S.tab==='leader'){if(!S.aEdit)renderLeader()}
 }
 function boot(){
   S.unsub.forEach(u=>u());S.unsub=[];S._leaders={};S._dgUsers={};S._fixed={};S.plansLoaded=false;S._lastBoard=null;
@@ -613,7 +614,7 @@ function boot(){
   const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
     S.plans=s.docs.map(d=>({id:d.id,...d.data()}));S.plansLoaded=true;syncBoard();
     // tag older plans with the owner's DG (needed so the DG can see them under the security rules)
-    S.plans.forEach(p=>{if(p.dgId!==S.me.dgId&&!S._fixed[p.id]){S._fixed[p.id]=1;db.collection('plans').doc(p.id).update({dgId:S.me.dgId}).catch(()=>{})}});
+    S.plans.forEach(p=>{if(!p.assignedBy&&p.dgId!==S.me.dgId&&!S._fixed[p.id]){S._fixed[p.id]=1;db.collection('plans').doc(p.id).update({dgId:S.me.dgId}).catch(()=>{})}});
     if(S.tab==='me'&&!S.editPlan)renderMe();
   },()=>{});
   S.unsub.push(u1);
@@ -784,6 +785,7 @@ function renderMe(){
   const rows=Array.from({length:p.days},(_,i)=>{
     const d=done.includes(i);
     return `<button class="day ${d?'done':''} ${i===t?'now':''}" data-day="${i}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></button>`}).join('');
+  const actionsHtml=p.assignedBy?`<div class="sub" style="margin:1.1rem 0 0">Assigned by ${esc(p.assignedByName||'your DG leader')}. Only your leader can edit or remove this plan — you can still tick off your days.</div>`:`<div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap"><button class="btn ghost small" data-edit="${p.id}">✎ Edit title &amp; notes</button><span>${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</span></div>`;
   $('plansCol').innerHTML=`<div class="chips">${chips}</div>
   <div class="card">
     ${headHtml}
@@ -792,12 +794,12 @@ function renderMe(){
     ${(!editing&&p.notes)?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
     ${td}
     <div class="days">${rows}</div>
-    <div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap"><button class="btn ghost small" data-edit="${p.id}">✎ Edit title &amp; notes</button><span>${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</span></div>
+    ${actionsHtml}
   </div>`;
 }
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit],[data-accept],[data-decline],[data-cancelreq]');if(!t)return;
+  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit],[data-accept],[data-decline],[data-cancelreq],[data-aedit],[data-asave],[data-acancel],[data-adel]');if(!t)return;
   if(t.dataset.tab)return setTab(t.dataset.tab);
   if(t.dataset.cancelreq)return db.collection('joinRequests').doc(S.uid).delete().catch(()=>toast('Could not update your request.'));
   if(t.dataset.decline)return db.collection('joinRequests').doc(t.dataset.decline).update({status:'declined'}).then(()=>toast('Request declined.')).catch(()=>toast('Could not decline. Please try again.'));
@@ -810,6 +812,20 @@ document.addEventListener('click',async e=>{
       await b.commit();toast('Accepted. They are now in your DG.');
     }catch(err){toast('Could not accept. Please try again.');t.disabled=false}
     return;
+  }
+  if(t.dataset.aedit){S.aEdit=t.dataset.aedit;S.aDel=null;return renderLeader()}
+  if(t.dataset.acancel){S.aEdit=null;S.aDel=null;return renderLeader()}
+  if(t.dataset.asave){
+    const nm=$('aName').value.trim();
+    if(!nm)return toast('Plan title cannot be empty.');
+    try{await db.collection('plans').doc(t.dataset.asave).update({name:nm,notes:$('aNotes').value.trim()});S.aEdit=null;renderLeader();toast('Plan updated for the member.')}
+    catch(err){toast('Could not save changes. Please try again.')}
+    return;
+  }
+  if(t.dataset.adel){
+    if(S.aDel!==t.dataset.adel){S.aDel=t.dataset.adel;return renderLeader()}
+    try{await db.collection('plans').doc(S.aDel).delete();toast('Plan deleted.')}catch(err){toast('Could not delete. Please try again.')}
+    S.aDel=null;return;
   }
   if(t.dataset.opendg)return setTab(S.me.role==='leader'?'leader':'board');
   if(t.dataset.dgedit)return openDg(true);
@@ -853,22 +869,72 @@ function syncBoard(){
   S._lastBoard=key;
   db.collection('leaderboard').doc(S.uid).set({...data,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{S._lastBoard=null});
 }
-function renderGlobal(){
-  const box=$('globalRows');
-  if(S.globalErr&&!S.global.length){box.innerHTML='<div class="empty">Could not load the Global Leaderboard. Please refresh and try again.</div>';return}
-  const rows=S.global.slice().sort((a,b)=>(b.avg-a.avg)||((b.daysDone||0)-(a.daysDone||0))||(a.name||'').localeCompare(b.name||''));
-  if(!rows.length){box.innerHTML='<div class="empty">Nobody is on the board yet.</div>';return}
+function globalGroups(){
+  const g={};
+  S.global.forEach(r=>{if(!r.dgId)return;(g[r.dgId]=g[r.dgId]||{id:r.dgId,name:r.dgName||'Unnamed DG',rows:[]}).rows.push(r)});
+  return Object.values(g).map(x=>{
+    x.plans=x.rows.reduce((t,r)=>t+(r.plans||0),0);
+    x.avg=x.plans?Math.round(x.rows.reduce((t,r)=>t+(r.avg||0)*(r.plans||0),0)/x.plans):0;
+    x.days=x.rows.reduce((t,r)=>t+(r.daysDone||0),0);
+    x.reading=x.rows.filter(r=>(r.plans||0)>0).length;
+    const l=x.rows.find(r=>r.role==='leader');x.leaderName=l?l.name:'';
+    return x;
+  });
+}
+const byProgress=(a,b)=>(b.avg-a.avg)||((b.days||b.daysDone||0)-(a.days||a.daysDone||0))||(String(a.name||'')).localeCompare(String(b.name||''));
+function personRows(rows,showDg){
   const medals=['🥇','🥈','🥉'];
-  box.innerHTML=rows.map((r,i)=>{
+  return rows.slice().sort(byProgress).map((r,i)=>{
     const mine=r.uid===S.uid;
     return `<div class="lbrow">
       <div class="rank">${medals[i]||(i+1)}</div>
       <img src="${esc(r.photoURL||'')}" alt="" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
-      <div style="flex:1;min-width:0"><div class="lbname">${esc(r.name||'Unnamed')}${r.role==='leader'?' <span class="tag warn">leader</span>':''}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${esc(r.dgName||'')} · ${r.plans||0} plan${r.plans===1?'':'s'} · ${r.avg||0}% average · ${r.daysDone||0} day${r.daysDone===1?'':'s'} read</div></div>
+      <div style="flex:1;min-width:0"><div class="lbname">${esc(r.name||'Unnamed')}${r.role==='leader'?' <span class="tag warn">leader</span>':''}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${showDg?esc(r.dgName||'')+' · ':''}${r.plans||0} plan${r.plans===1?'':'s'} · ${r.avg||0}% average · ${r.daysDone||0} day${r.daysDone===1?'':'s'} read</div></div>
       <div class="lbbar bar"><i style="width:${r.avg||0}%"></i></div>
     </div>`;
   }).join('');
 }
+function renderGlobal(){
+  const box=$('globalRows');
+  if(S.globalErr&&!S.global.length){box.innerHTML='<div class="empty">Could not load the leaderboard. Please refresh and try again.</div>';return}
+  const gs=globalGroups();
+  let view=S.viewDg?gs.find(g=>g.id===S.viewDg):null;
+  if(S.viewDg&&!view)S.viewDg=null;
+  if(view){
+    $('gTitle').textContent=view.name;
+    $('gSub').textContent=`${view.leaderName?'Led by '+view.leaderName+' · ':''}${view.rows.length} reader${view.rows.length===1?'':'s'} · ${view.avg}% average completion. A read-only look at how this DG is doing.`;
+    $('gChips').innerHTML='<button class="back" data-gback="1" style="margin:0">← All DGs</button>';
+    box.innerHTML=personRows(view.rows,false);
+    return;
+  }
+  $('gTitle').textContent='Global Leaderboard';
+  $('gSub').textContent=S.gTab==='dgs'?'Every Discipleship Group, ranked by average plan completion. Open any DG to see how its members are reading.':'Everyone using the tracker, across every DG — members and leaders together. Ranked by average plan completion.';
+  $('gChips').innerHTML=[['people','People'],['dgs','Discipleship Groups']].map(o=>`<button type="button" class="chip ${S.gTab===o[0]?'on':''}" data-g="${o[0]}">${o[1]}</button>`).join('');
+  if(!S.global.length){box.innerHTML='<div class="empty">Nobody is on the board yet.</div>';return}
+  if(S.gTab==='dgs'){
+    const medals=['🥇','🥈','🥉'];
+    box.innerHTML=gs.sort(byProgress).map((g,i)=>{
+      const mine=g.id===S.me.dgId;
+      return `<div class="lbrow">
+        <div class="rank">${medals[i]||(i+1)}</div>
+        <div style="flex:1;min-width:0"><div class="lbname">${esc(g.name)}${mine?' <span class="tag mu">your DG</span>':''}</div><div class="lbsub">${g.leaderName?'Led by '+esc(g.leaderName)+' · ':''}${g.reading} of ${g.rows.length} reading · ${g.plans} plan${g.plans===1?'':'s'} · ${g.avg}% average</div></div>
+        <div class="lbbar bar"><i style="width:${g.avg}%"></i></div>
+        <button class="btn ghost poke" data-gdg="${esc(g.id)}">View</button>
+      </div>`;
+    }).join('');
+  }else box.innerHTML=personRows(S.global,true);
+}
+$('globalView').addEventListener('click',e=>{
+  const c=e.target.closest('[data-g],[data-gdg],[data-gback]');if(!c)return;
+  if(c.dataset.g){S.gTab=c.dataset.g;S.viewDg=null}
+  else if(c.dataset.gdg){S.gTab='dgs';S.viewDg=c.dataset.gdg}
+  else S.viewDg=null;
+  renderGlobal();window.scrollTo(0,0);
+});
+$('dgView').addEventListener('click',e=>{
+  const c=e.target.closest('[data-gopen]');if(!c)return;
+  S.gTab='dgs';S.viewDg=c.dataset.gopen;setTab('global');window.scrollTo(0,0);
+});
 
 /* ---------------- LEADERBOARD ---------------- */
 function renderBoard(){
@@ -901,9 +967,12 @@ function renderLeader(){
   rows.forEach(r=>{
     h+=`<div class="card mem"><h3>${esc(r.m.name||'Unnamed member')}<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button></h3>`+
       (r.plans.length?r.plans.map(p=>{
-        const k=r.m.id+'/'+p.id,[st,cl]=status(p),done=p.done||[];
+        const k=r.m.id+'/'+p.id,[st,cl]=status(p),done=p.done||[],mine=p.assignedBy===S.uid;
+        if(mine&&S.aEdit===p.id)return `<div class="pl" style="cursor:default"><label style="margin-top:0" for="aName">Plan title</label><input id="aName" value="${esc(p.name)}" maxlength="70"><label for="aNotes">Notes (optional)</label><textarea id="aNotes" maxlength="300">${esc(p.notes||'')}</textarea><div style="margin-top:.7rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-asave="${p.id}">Save changes</button><button class="btn ghost small" data-acancel="1">Cancel</button></div><div class="sub" style="margin:.6rem 0 0">The title and notes update for ${esc(r.m.name||'this member')}. Their progress is kept.</div></div>`;
         const dots=S.open[k]?`<div class="dots">${Array.from({length:p.days},(_,i)=>`<i class="${done.includes(i)?'d':''}" title="${esc(reading(p,i))}">${i+1}</i>`).join('')}</div>`:'';
-        return `<div class="pl" data-open="${esc(k)}"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span><br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div>${dots}</div>`}).join(''):'<div class="sub">No plan created yet.</div>');
+        const acts=mine?`<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.1rem 0 .3rem"><button class="btn ghost small" data-aedit="${p.id}">✎ Edit</button>${S.aDel===p.id?`<button class="btn ghost small del" data-adel="${p.id}">Confirm delete</button><button class="btn ghost small" data-acancel="1">Cancel</button><span class="lbsub">This removes the plan and their progress on it.</span>`:`<button class="btn ghost small del" data-adel="${p.id}">Delete</button>`}</div>`:'';
+        return `<div class="pl" data-open="${esc(k)}"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span>${mine?'<span class="tag mu">Assigned</span>':''}<br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div>${dots}</div>${acts}`;
+      }).join(''):'<div class="sub">No plan created yet.</div>');
     h+='</div>';
   });
   $('leaderView').innerHTML=h;
