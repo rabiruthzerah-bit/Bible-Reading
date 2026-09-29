@@ -114,10 +114,9 @@ textarea{resize:vertical;min-height:60px}
 .quick .chip{padding:.28rem .75rem;font-size:.75rem}
 .roleCard.sel{border-color:var(--gold);background:var(--soft);box-shadow:inset 0 0 0 1px var(--gold)}
 .dgc.mine{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 8px 24px rgba(30,42,59,.06)}
-/* Leader theme: navy dominant */
-body.leader{--page:#0e1f3f;--card:#183260;--ink:#eef2fa;--muted:#a9b8d3;--line:#33507f;--bg:#112a52;--soft:#213f73;--navy:#d9b65f;--navy2:#e8cb85;--gold:#d9b65f;--ok:#6fd0a0;--warn:#f2b866;--bad:#ff8f99;color-scheme:dark}
-body.leader .bar i{background:linear-gradient(90deg,#6f97d6,#d9b65f)}
-body.leader .card{box-shadow:0 8px 24px rgba(0,0,0,.28)}
+/* Leader theme: the dark palette from the Pro draft */
+body.leader{--bg:#131922;--card:#1a222e;--ink:#e8e4da;--muted:#98a1ae;--line:#2b3546;--navy:#8fb0dd;--navy2:#a9c3e8;--gold:#d2ad5c;--soft:#212b3a;--ok:#6cc39a;--warn:#e0a35a;--bad:#e58a93;color-scheme:dark}
+body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 24px rgba(0,0,0,.25)}
 </style>
 </head>
 <body>
@@ -433,13 +432,13 @@ function groups(){
 }
 function dgName(){const g=S.members[S.me&&S.me.dgId];return g&&g.dgName?g.dgName:''}
 async function loadUsers(){
-  const sn=await db.collection('users').get();
-  S.members={};sn.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
+  const sn=await db.collection('users').where('role','==','leader').get();
+  sn.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
 }
 function renderDgPick(){
   const gs=groups().sort((a,b)=>a.name.localeCompare(b.name));
   if(!gs.length){$('dgList').innerHTML='<div class="empty">No DG has been set up yet.<br>Ask your DG leader to sign up first, then come back.</div>';return}
-  $('dgList').innerHTML=gs.map(g=>`<div class="roleCard ${S._dgPick===g.id?'sel':''}" data-dgpick="${esc(g.id)}" style="margin-bottom:.7rem"><b>${esc(g.name)}</b><span>Led by ${esc(g.leader.name||'Unnamed')} · ${g.members.length} member${g.members.length===1?'':'s'}</span></div>`).join('');
+  $('dgList').innerHTML=gs.map(g=>`<div class="roleCard ${S._dgPick===g.id?'sel':''}" data-dgpick="${esc(g.id)}" style="margin-bottom:.7rem"><b>${esc(g.name)}</b><span>Led by ${esc(g.leader.name||'Unnamed')}</span></div>`).join('');
 }
 async function openDg(edit){
   S._dgEdit=!!edit;S._dgPick=(S.me&&S.me.dgId)||null;
@@ -481,7 +480,7 @@ async function saveDg(){
       await ref.set({dgId:S._dgPick},{merge:true});
       S.me={...S.me,dgId:S._dgPick};
     }
-    if(S._dgEdit){S._dgEdit=false;showScreen('app');renderTab();toast('Saved.')}
+    if(S._dgEdit){S._dgEdit=false;boot();toast('Saved.')}
     else boot();
   }catch(e){msg.textContent='Could not save. Please try again.'}
   finally{$('dgBtn').disabled=false}
@@ -509,7 +508,7 @@ function renderDgs(){
     const body=mine
       ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Switch DG'}</button></div>`
       :`<div class="sub" style="margin:.8rem 0 0">🔒 Only members of this DG can open its dashboard.</div>`;
-    return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b> · ${n} member${n===1?'':'s'}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
+    return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b>${mine?` · ${n} member${n===1?'':'s'}`:''}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
   }).join('');
   $('dgView').innerHTML=h;
 }
@@ -518,6 +517,7 @@ function renderTab(){
   if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='leader')renderLeader();
 }
 function boot(){
+  S.unsub.forEach(u=>u());S.unsub=[];S._leaders={};S._dgUsers={};S._fixed={};
   showScreen('app');
   refreshWho();
   const isLeader=S.me.role==='leader';
@@ -528,17 +528,18 @@ function boot(){
   // my plans (members and leaders)
   const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
     S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
+    // tag older plans with the owner's DG (needed so the DG can see them under the security rules)
+    S.plans.forEach(p=>{if(p.dgId!==S.me.dgId&&!S._fixed[p.id]){S._fixed[p.id]=1;db.collection('plans').doc(p.id).update({dgId:S.me.dgId}).catch(()=>{})}});
     if(S.tab==='me'&&!S.editPlan)renderMe();
   },()=>{});
   S.unsub.push(u1);
-  // all users (for names/roles) — leader reads all, member reads all (needed for leaderboard names)
-  const u2=db.collection('users').onSnapshot(s=>{
-    S.members={};s.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
-    renderTab();
-  },()=>{});
-  S.unsub.push(u2);
-  // all plans — leader reads all; members can read all too (rules allow it) for leaderboard math
-  const u3=db.collection('plans').onSnapshot(s=>{
+  // users: every DG leader (for the DG list) + everyone in MY DG only
+  const mergeUsers=()=>{S.members={...S._leaders,...S._dgUsers};renderTab()};
+  const toMap=sn=>{const m={};sn.docs.forEach(d=>m[d.id]={id:d.id,...d.data()});return m};
+  S.unsub.push(db.collection('users').where('role','==','leader').onSnapshot(sn=>{S._leaders=toMap(sn);mergeUsers()},()=>{}));
+  S.unsub.push(db.collection('users').where('dgId','==',S.me.dgId).onSnapshot(sn=>{S._dgUsers=toMap(sn);mergeUsers()},()=>{}));
+  // plans of my DG only
+  const u3=db.collection('plans').where('dgId','==',S.me.dgId).onSnapshot(s=>{
     S.allPlans={};s.docs.forEach(d=>{const p={id:d.id,...d.data()};(S.allPlans[p.uid]=S.allPlans[p.uid]||[]).push(p)});
     renderTab();
   },()=>{});
@@ -633,7 +634,7 @@ async function create(){
   }
   if(!(days>=1&&days<=366))return msg.textContent=perday?'That pace makes a plan longer than 366 days. Try more chapters per day.':'Days must be between 1 and 366.';
   if(!start)return msg.textContent='Please choose a start date.';
-  const p={uid:S.uid,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  const p={uid:S.uid,dgId:S.me.dgId,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   if(segs.length)p.segs=segs;
   if(perday)p.perDay=per;
   msg.textContent='';$('create').disabled=true;
