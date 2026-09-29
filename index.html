@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DG Bible Reading Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3a5f'/%3E%3Cpath d='M32 21c-5-3.500-12-4.500-20-3.500v29c8-1 15 0 20 3.500 5-3.500 12-4.500 20-3.500v-29c-8-1-15 0-20 3.500z' fill='%23fffdf9'/%3E%3Cpath d='M32 21v29' stroke='%23a8842f' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -136,6 +137,18 @@ textarea{resize:vertical;min-height:60px}
   </div>
 </div>
 
+<!-- ===================== NAME SCREEN ===================== -->
+<div id="nameScreen" class="center hide">
+  <div class="card authCard" style="max-width:480px">
+    <div class="eyebrow">Last step</div>
+    <h1 style="font-size:1.8rem">What should we call you?</h1>
+    <p class="sub">Type the name you prefer to be called. Please use your real preferred name, not a creative nickname, so everyone in the group can recognize each other.</p>
+    <input id="nameIn" placeholder="e.g. Mark" maxlength="30" autocomplete="off" style="text-align:center">
+    <button class="btn full" id="nameBtn">Continue</button>
+    <p class="sub" id="nameMsg" style="margin:.8rem 0 0"></p>
+  </div>
+</div>
+
 <!-- ===================== APP ===================== -->
 <div id="app" class="hide">
 <div class="topbar">
@@ -169,10 +182,19 @@ textarea{resize:vertical;min-height:60px}
         <div><label for="pFrom">From chapter</label><input id="pFrom" type="number" min="1" value="1"></div>
         <div><label for="pTo">To chapter</label><input id="pTo" type="number" min="1" value="1"></div>
       </div>
+      <div id="modeRow">
+        <label for="pMode">Plan by</label>
+        <select id="pMode">
+          <option value="days">Total number of days</option>
+          <option value="perday">Chapters per day</option>
+        </select>
+      </div>
       <div class="row">
-        <div><label for="pDays">Days</label><input id="pDays" type="number" min="1" max="366" value="21"></div>
+        <div id="daysBox"><label for="pDays">Days</label><input id="pDays" type="number" min="1" max="366" value="21"></div>
+        <div id="perBox" class="hide"><label for="pPer">Chapters per day</label><input id="pPer" type="number" min="1" value="5"></div>
         <div><label for="pStart">Start date</label><input id="pStart" type="date"></div>
       </div>
+      <p class="sub" id="calc" style="margin:.6rem 0 0;color:var(--gold)"></p>
       <label for="pNotes">Notes (optional)</label>
       <textarea id="pNotes" placeholder="Focus, prayer points, or questions to reflect on" maxlength="300"></textarea>
       <button class="btn full" id="create">Create Plan</button>
@@ -245,6 +267,7 @@ function dayOf(p,i){const d=new Date(p.start+'T00:00');d.setDate(d.getDate()+i);
 function todayIdx(p){const a=new Date(p.start+'T00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((b-a)/864e5)}
 function reading(p,i){
   if(!p.book)return 'Day '+(i+1)+' reading';
+  if(p.perDay){const a=p.from+i*p.perDay,b=Math.min(p.to,a+p.perDay-1);return a>p.to?'Rest & reflection':(a===b?`${p.book} ${a}`:`${p.book} ${a}–${b}`)}
   const n=p.to-p.from+1,a=p.from+Math.floor(i*n/p.days),b=p.from+Math.floor((i+1)*n/p.days)-1;
   return b<a?'Rest & reflection':(a===b?`${p.book} ${a}`:`${p.book} ${a}–${b}`);
 }
@@ -267,50 +290,69 @@ $('googleBtn').addEventListener('click',()=>{
 });
 $('signOut').addEventListener('click',()=>auth.signOut());
 
+const SCREENS=['authScreen','roleScreen','nameScreen','app'];
+function showScreen(id){SCREENS.forEach(x=>$(x).classList.toggle('hide',x!==id))}
+
 auth.onAuthStateChanged(async user=>{
   S.unsub.forEach(u=>u());S.unsub=[];
-  if(!user){
-    $('authScreen').classList.remove('hide');$('roleScreen').classList.add('hide');$('app').classList.add('hide');
-    return;
-  }
+  if(!user){showScreen('authScreen');return}
   S.uid=user.uid;
-  $('whoImg').src=user.photoURL||'';$('whoName').textContent=user.displayName||user.email;
-  const snap=await db.collection('users').doc(user.uid).get();
+  showScreen('nameScreen');$('nameScreen').classList.add('hide'); // hide sign-in immediately while we check the account
+  $('whoImg').src=user.photoURL||'';
+  let snap;
+  try{snap=await db.collection('users').doc(user.uid).get()}
+  catch(e){showScreen('authScreen');$('authMsg').textContent='Could not load your account. Please try again.';return}
   if(!snap.exists){
-    $('authScreen').classList.add('hide');$('roleScreen').classList.remove('hide');
     S._pendingUser={name:user.displayName||user.email,email:user.email,photoURL:user.photoURL||''};
+    S._role=null;
+    showScreen('roleScreen');
     return;
   }
   S.me=snap.data();
+  if(!S.me.nameSet){S._role=null;showScreen('nameScreen');$('nameIn').focus();return}
   boot();
 });
 
-document.querySelectorAll('.roleCard').forEach(c=>c.addEventListener('click',async()=>{
-  const role=c.dataset.role;
-  const data=Object.assign({role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},S._pendingUser);
-  await db.collection('users').doc(S.uid).set(data);
-  S.me=data;
-  $('roleScreen').classList.add('hide');
-  boot();
+document.querySelectorAll('.roleCard').forEach(c=>c.addEventListener('click',()=>{
+  S._role=c.dataset.role;
+  showScreen('nameScreen');$('nameIn').focus();
 }));
 
+async function saveName(){
+  const name=$('nameIn').value.trim().replace(/\s+/g,' '),msg=$('nameMsg');
+  if(name.length<2)return msg.textContent='Please enter the name you prefer to be called.';
+  msg.textContent='';$('nameBtn').disabled=true;
+  try{
+    const ref=db.collection('users').doc(S.uid);
+    if(S._role){
+      const data={...S._pendingUser,role:S._role,name,fullName:S._pendingUser.name,nameSet:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+      await ref.set(data);S.me=data;
+    }else{
+      await ref.set({name,nameSet:true,fullName:S.me.fullName||S.me.name||''},{merge:true});
+      S.me={...S.me,name,nameSet:true};
+    }
+    boot();
+  }catch(e){msg.textContent='Could not save your name. Please try again.'}
+  $('nameBtn').disabled=false;
+}
+$('nameBtn').addEventListener('click',saveName);
+$('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')saveName()});
+
 function boot(){
-  $('app').classList.remove('hide');
+  showScreen('app');
+  $('whoName').textContent=S.me.name||'';
   const isLeader=S.me.role==='leader';
   $('leaderTab').classList.toggle('hide',!isLeader);
-  $('meTab').classList.toggle('hide',isLeader);
   $('pBook').innerHTML=BOOKS.map(b=>`<option>${b[0]}</option>`).join('')+'<option value="">Custom / topical reading</option>';
   $('pBook').value='John';fillBook();$('pStart').value=iso(new Date());
   setTab(isLeader?'leader':'me');
 
-  // my plans (members only)
-  if(!isLeader){
-    const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
-      S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
-      if(S.tab==='me')renderMe();
-    },()=>{});
-    S.unsub.push(u1);
-  }
+  // my plans (members and leaders)
+  const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
+    S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(S.tab==='me')renderMe();
+  },()=>{});
+  S.unsub.push(u1);
   // all users (for names/roles) — leader reads all, member reads all (needed for leaderboard names)
   const u2=db.collection('users').onSnapshot(s=>{
     S.members={};s.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
@@ -329,20 +371,56 @@ function boot(){
 function fillBook(){
   const b=BOOKS.find(x=>x[0]===$('pBook').value);
   $('rangeRow').classList.toggle('hide',!b);
+  $('modeRow').classList.toggle('hide',!b);
+  if(!b)$('pMode').value='days';
   if(b){$('pFrom').max=b[1];$('pTo').max=b[1];$('pFrom').value=1;$('pTo').value=b[1]}
+  updateMode();
+}
+function updateMode(){
+  const perday=$('pMode').value==='perday';
+  $('daysBox').classList.toggle('hide',perday);
+  $('perBox').classList.toggle('hide',!perday);
+  updateCalc();
+}
+function updateCalc(){
+  const bk=BOOKS.find(x=>x[0]===$('pBook').value),el=$('calc');
+  if(!bk){el.textContent='';return}
+  const from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
+  if(!(from>=1&&to>=from&&to<=bk[1])){el.textContent='';return}
+  const n=to-from+1;
+  if($('pMode').value==='perday'){
+    const per=parseInt($('pPer').value,10);
+    if(!(per>=1)){el.textContent='';return}
+    const d=Math.ceil(n/per);
+    el.textContent=`${n} chapter${n===1?'':'s'} at ${per} per day = ${d} day${d===1?'':'s'}.`;
+  }else{
+    const d=parseInt($('pDays').value,10);
+    if(!(d>=1)){el.textContent='';return}
+    const r=n/d;
+    el.textContent=`About ${r%1===0?r:r.toFixed(1)} chapter${r===1?'':'s'} per day.`;
+  }
 }
 $('pBook').addEventListener('change',fillBook);
+$('pMode').addEventListener('change',updateMode);
+['pFrom','pTo','pDays','pPer'].forEach(id=>$(id).addEventListener('input',updateCalc));
 
 async function create(){
-  const msg=$('msg'),name=$('pName').value.trim(),days=parseInt($('pDays').value,10),start=$('pStart').value;
+  const msg=$('msg'),name=$('pName').value.trim(),start=$('pStart').value;
   const bk=BOOKS.find(x=>x[0]===$('pBook').value);
   let from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
+  const perday=!!bk&&$('pMode').value==='perday';
+  let days=parseInt($('pDays').value,10),per=parseInt($('pPer').value,10);
   if(!name)return msg.textContent='Please give your plan a title.';
-  if(!(days>=1&&days<=366))return msg.textContent='Days must be between 1 and 366.';
-  if(!start)return msg.textContent='Please choose a start date.';
   if(bk&&!(from>=1&&to>=from&&to<=bk[1]))return msg.textContent=`${bk[0]} has ${bk[1]} chapters; please check your range.`;
+  if(perday){
+    if(!(per>=1))return msg.textContent='Chapters per day must be at least 1.';
+    days=Math.ceil((to-from+1)/per);
+  }
+  if(!(days>=1&&days<=366))return msg.textContent=perday?'That pace makes a plan longer than 366 days. Try more chapters per day.':'Days must be between 1 and 366.';
+  if(!start)return msg.textContent='Please choose a start date.';
   const p={uid:S.uid,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   if(bk){p.book=bk[0];p.from=from;p.to=to}
+  if(perday)p.perDay=per;
   msg.textContent='';$('create').disabled=true;
   try{await db.collection('plans').add(p);$('pName').value='';$('pNotes').value=''}
   catch(e){msg.textContent='Could not save your plan. Please try again.'}
@@ -366,7 +444,7 @@ function renderMe(){
     return `<button class="day ${d?'done':''} ${i===t?'now':''}" data-day="${i}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></button>`}).join('');
   $('plansCol').innerHTML=`<div class="chips">${chips}</div>
   <div class="card">
-    <div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days<span class="tag ${cl}">${st}</span></div></div><div class="pct">${pct(p)}%</div></div>
+    <div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days${p.perDay?` · ${p.perDay} ch/day`:''}<span class="tag ${cl}">${st}</span></div></div><div class="pct">${pct(p)}%</div></div>
     <div class="bar"><i style="width:${pct(p)}%"></i></div>
     <div class="sub" style="margin:.5rem 0 0">${done.length} of ${p.days} days completed</div>
     ${p.notes?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
