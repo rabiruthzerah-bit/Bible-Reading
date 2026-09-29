@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DG Bible Reading Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f8f5ef;--card:#fffdf9;--ink:#1e2a3b;--muted:#6a7280;--line:#e7dfd0;--navy:#1f3a5f;--navy2:#2c4d7c;--gold:#a8842f;--soft:#f1ece1;--ok:#2f6f4f;--warn:#9a5b13;--bad:#8c2f39;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);padding:2rem 1.25rem 4rem;min-height:100vh}
+.wrap{max-width:1120px;margin:0 auto}
+header{text-align:center;padding:1rem 0 1.6rem}
+.eyebrow{font-size:.72rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);font-weight:600}
+h1{font:600 clamp(2.1rem,5vw,3rem)/1.1 var(--serif);margin:.4rem 0 .5rem}
+.verse{font:italic 500 1.05rem var(--serif);color:var(--muted)}
+.rule{width:64px;height:2px;background:var(--gold);margin:1rem auto 0;border-radius:2px}
+.tabs{display:flex;justify-content:center;gap:.25rem;background:var(--soft);border:1px solid var(--line);padding:.25rem;border-radius:999px;width:max-content;max-width:100%;margin:0 auto 1.6rem}
+.tab{border:0;background:none;font:500 .88rem var(--sans);color:var(--muted);padding:.55rem 1.3rem;border-radius:999px;cursor:pointer}
+.tab.on{background:var(--navy);color:var(--card)}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:1.5rem;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.6rem;box-shadow:0 1px 2px rgba(30,42,59,.04),0 8px 24px rgba(30,42,59,.05)}
+.card+.card{margin-top:1.5rem}
+h2{font:600 1.55rem/1.2 var(--serif);margin-bottom:.2rem}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:1.2rem}
+label{display:block;font-size:.74rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:.9rem 0 .35rem}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.62rem .8rem}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px}
+textarea{resize:vertical;min-height:60px}
+.row{display:flex;gap:.7rem}.row>*{flex:1;min-width:0}
+.btn{font:600 .88rem var(--sans);border:1px solid var(--navy);background:var(--navy);color:var(--card);border-radius:8px;padding:.7rem 1.2rem;cursor:pointer}
+.btn:hover{background:var(--navy2)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.full{width:100%;margin-top:1.3rem}
+.ghost{background:none;color:var(--navy);border-color:var(--line)}
+.ghost:hover{background:var(--soft)}
+.ghost.del{color:var(--bad)}
+.small{padding:.4rem .8rem;font-size:.78rem}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:.2rem 0 1.4rem}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:.4rem .95rem;font:500 .82rem var(--sans);cursor:pointer}
+.chip.on{border-color:var(--gold);background:var(--soft);box-shadow:inset 0 0 0 1px var(--gold)}
+.bar{height:8px;background:var(--soft);border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));border-radius:8px;transition:width .35s}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:.9rem}
+.pct{font:600 2.2rem/1 var(--serif);color:var(--navy)}
+.today{border-left:3px solid var(--gold);background:var(--soft);padding:.8rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0}
+.today b{font:600 1.2rem var(--serif)}
+.today small{display:block;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.days{max-height:430px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+.day{display:flex;align-items:center;gap:.9rem;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:.7rem 1rem;font:inherit;color:var(--ink);cursor:pointer}
+.day:last-child{border-bottom:0}.day:hover{background:var(--soft)}
+.day .ck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--muted);flex:none;display:grid;place-items:center;font-size:.72rem;color:var(--card)}
+.day.done .ck{background:var(--ok);border-color:var(--ok)}
+.day.done .rd{color:var(--muted);text-decoration:line-through}
+.day .n{font-size:.72rem;color:var(--muted);width:3.4rem;flex:none;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.day .rd{flex:1;font-weight:500}.day .dt{font-size:.78rem;color:var(--muted)}
+.day.now{box-shadow:inset 3px 0 0 var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem}
+.stat b{display:block;font:600 2rem/1.1 var(--serif);color:var(--navy)}
+.stat span{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mem{padding:1.2rem 1.6rem}
+.mem h3{font:600 1.35rem var(--serif);margin-bottom:.6rem;display:flex;align-items:center;gap:.6rem;justify-content:space-between;flex-wrap:wrap}
+.pl{padding:.8rem 0;border-top:1px solid var(--line);cursor:pointer}
+.pl .top{display:flex;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin-bottom:.45rem;font-size:.9rem}
+.pl .top span{color:var(--muted);font-size:.8rem}
+.tag{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .6rem;border-radius:999px;border:1px solid currentColor;margin-left:.5rem;white-space:nowrap}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.mu{color:var(--muted)}
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin-top:.8rem}
+.dots i{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);font:600 .66rem/24px var(--sans);text-align:center;font-style:normal;color:var(--muted)}
+.dots i.d{background:var(--navy);border-color:var(--navy);color:var(--card)}
+.empty{text-align:center;color:var(--muted);padding:2rem 1rem;border:1px dashed var(--line);border-radius:10px}
+.note{font-size:.78rem;color:var(--muted);text-align:center;margin-top:1.5rem}
+.hide{display:none!important}
+/* auth + role screens */
+.center{min-height:70vh;display:flex;align-items:center;justify-content:center}
+.authCard{max-width:420px;width:100%;text-align:center}
+.authCard .rule{margin:1.2rem auto 1.4rem}
+.gbtn{display:inline-flex;align-items:center;gap:.7rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.75rem 1.4rem;font:600 .92rem var(--sans);color:var(--ink);cursor:pointer;box-shadow:0 1px 2px rgba(30,42,59,.06)}
+.gbtn:hover{background:var(--soft)}
+.gbtn svg{width:18px;height:18px}
+.roleGrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.4rem}
+@media(max-width:520px){.roleGrid{grid-template-columns:1fr}}
+.roleCard{border:1.5px solid var(--line);border-radius:12px;padding:1.4rem 1.1rem;cursor:pointer;background:var(--bg)}
+.roleCard:hover{border-color:var(--gold)}
+.roleCard b{display:block;font:600 1.15rem var(--serif);margin-bottom:.3rem}
+.roleCard span{font-size:.8rem;color:var(--muted)}
+/* header bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;max-width:1120px;margin:0 auto 1rem;padding:0 .1rem}
+.who{display:flex;align-items:center;gap:.6rem;font-size:.85rem}
+.who img{width:30px;height:30px;border-radius:50%;border:1px solid var(--line)}
+.who b{font-weight:600}
+.signout{font-size:.78rem;color:var(--muted);background:none;border:0;cursor:pointer;text-decoration:underline}
+.toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:var(--navy);color:var(--card);padding:.7rem 1.2rem;border-radius:8px;font-size:.85rem;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+.rank{width:24px;text-align:center;font:600 .85rem var(--sans);color:var(--muted)}
+.lbrow{display:flex;align-items:center;gap:.9rem;padding:.7rem 0;border-top:1px solid var(--line)}
+.lbrow:first-child{border-top:0}
+.lbname{flex:1;font-weight:600}
+.lbsub{font-size:.75rem;color:var(--muted)}
+.lbbar{width:110px}
+.poke{font-size:.76rem;padding:.35rem .8rem}
+</style>
+</head>
+<body>
+
+<!-- ===================== AUTH SCREEN ===================== -->
+<div id="authScreen" class="center">
+  <div class="card authCard">
+    <div class="eyebrow">Discipleship Group</div>
+    <h1 style="font-size:2rem">Bible Reading Tracker</h1>
+    <div class="verse">"Thy word is a lamp unto my feet." — Psalm 119:105</div>
+    <div class="rule"></div>
+    <p class="sub">Sign in with your Google account to build your reading plan and track your progress.</p>
+    <button class="gbtn" id="googleBtn">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C33.5 5.1 29 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.7 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C33.5 5.1 29 3 24 3c-7.7 0-14.3 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.9 12.9-5.1l-6-5C29 36.6 26.6 37.5 24 37.5c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.6 40.5 16.3 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6 5C40.5 35.6 43 30.3 43 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
+      Sign in with Google
+    </button>
+    <p class="sub" id="authMsg" style="margin-top:1rem"></p>
+  </div>
+</div>
+
+<!-- ===================== ROLE SCREEN ===================== -->
+<div id="roleScreen" class="center hide">
+  <div class="card authCard" style="max-width:480px">
+    <div class="eyebrow">One more step</div>
+    <h1 style="font-size:1.8rem">How will you use the tracker?</h1>
+    <p class="sub">You can't switch this later without asking your DG leader.</p>
+    <div class="roleGrid">
+      <div class="roleCard" data-role="member"><b>DG Member</b><span>Build your own reading plan, track daily progress, and see the leaderboard.</span></div>
+      <div class="roleCard" data-role="leader"><b>DG Leader</b><span>See every member's progress and encourage the group.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hide">
+<div class="topbar">
+  <div class="who"><img id="whoImg" src="" alt=""><b id="whoName"></b></div>
+  <button class="signout" id="signOut">Sign out</button>
+</div>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Discipleship Group</div>
+  <h1>Bible Reading Tracker</h1>
+  <div class="verse">"Thy word is a lamp unto my feet, and a light unto my path." — Psalm 119:105</div>
+  <div class="rule"></div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab on" data-tab="me" id="meTab">My Reading</button>
+  <button class="tab" data-tab="board" id="boardTab">Leaderboard</button>
+  <button class="tab hide" data-tab="leader" id="leaderTab">Leader Dashboard</button>
+</nav>
+
+<section id="meView" class="grid">
+  <div>
+    <div class="card">
+      <h2>Create a Plan</h2>
+      <p class="sub">Design a reading rhythm that fits your season.</p>
+      <label for="pName">Plan title</label>
+      <input id="pName" placeholder="e.g. The Gospel of John" maxlength="70">
+      <label for="pBook">Book of the Bible</label>
+      <select id="pBook"></select>
+      <div class="row" id="rangeRow">
+        <div><label for="pFrom">From chapter</label><input id="pFrom" type="number" min="1" value="1"></div>
+        <div><label for="pTo">To chapter</label><input id="pTo" type="number" min="1" value="1"></div>
+      </div>
+      <div class="row">
+        <div><label for="pDays">Days</label><input id="pDays" type="number" min="1" max="366" value="21"></div>
+        <div><label for="pStart">Start date</label><input id="pStart" type="date"></div>
+      </div>
+      <label for="pNotes">Notes (optional)</label>
+      <textarea id="pNotes" placeholder="Focus, prayer points, or questions to reflect on" maxlength="300"></textarea>
+      <button class="btn full" id="create">Create Plan</button>
+      <p class="sub" id="msg" style="margin:.8rem 0 0"></p>
+    </div>
+  </div>
+  <div id="plansCol"></div>
+</section>
+
+<section id="boardView" class="hide">
+  <div class="card">
+    <h2>Leaderboard</h2>
+    <p class="sub">See who's reading consistently — and give someone a nudge.</p>
+    <div id="boardRows"></div>
+  </div>
+</section>
+
+<section id="leaderView" class="hide"></section>
+<p class="note" id="note"></p>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (compat SDK — simplest for a single static file) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- EmailJS — sends the poke email straight from the browser, no Cloud Functions / Blaze plan needed -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+/* =========================================================
+   1) PASTE YOUR FIREBASE CONFIG HERE
+   Firebase console → Project settings → General → Your apps → Web app
+   ========================================================= */
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCzaAXv13w3jQ3ptVEiHDaLBWcoyZLMShM",
+  authDomain: "bible-reading-tracker-7.firebaseapp.com",
+  projectId: "bible-reading-tracker-7",
+  storageBucket: "bible-reading-tracker-7.firebasestorage.app",
+  messagingSenderId: "203934452475",
+  appId: "1:203934452475:web:b8475fb76e46ae9a267e5e",
+  measurementId: "G-4QXSS985G0"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* =========================================================
+   2) PASTE YOUR EMAILJS CONFIG HERE (free plan, no credit card)
+   emailjs.com → Email Services (connect Gmail) → Email Templates → Account → General
+   ========================================================= */
+const EMAILJS_PUBLIC_KEY  = "RcBBpD7zRqqRK9pNH";
+const EMAILJS_SERVICE_ID  = "service_dy4s5pf";
+const EMAILJS_TEMPLATE_ID = "template_8ulyqhd";
+emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+const POKE_COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours between pokes to the same person
+
+const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deuteronomy",34],["Joshua",24],["Judges",21],["Ruth",4],["1 Samuel",31],["2 Samuel",24],["1 Kings",22],["2 Kings",25],["1 Chronicles",29],["2 Chronicles",36],["Ezra",10],["Nehemiah",13],["Esther",10],["Job",42],["Psalms",150],["Proverbs",31],["Ecclesiastes",12],["Song of Solomon",8],["Isaiah",66],["Jeremiah",52],["Lamentations",5],["Ezekiel",48],["Daniel",12],["Hosea",14],["Joel",3],["Amos",9],["Obadiah",1],["Jonah",4],["Micah",7],["Nahum",3],["Habakkuk",3],["Zephaniah",3],["Haggai",2],["Zechariah",14],["Malachi",4],["Matthew",28],["Mark",16],["Luke",24],["John",21],["Acts",28],["Romans",16],["1 Corinthians",16],["2 Corinthians",13],["Galatians",6],["Ephesians",6],["Philippians",4],["Colossians",4],["1 Thessalonians",5],["2 Thessalonians",3],["1 Timothy",6],["2 Timothy",4],["Titus",3],["Philemon",1],["Hebrews",13],["James",5],["1 Peter",5],["2 Peter",3],["1 John",5],["2 John",1],["3 John",1],["Jude",1],["Revelation",22]];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const S={tab:'me',uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
+function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
+function dayOf(p,i){const d=new Date(p.start+'T00:00');d.setDate(d.getDate()+i);return d}
+function todayIdx(p){const a=new Date(p.start+'T00:00'),b=new Date();b.setHours(0,0,0,0);return Math.round((b-a)/864e5)}
+function reading(p,i){
+  if(!p.book)return 'Day '+(i+1)+' reading';
+  const n=p.to-p.from+1,a=p.from+Math.floor(i*n/p.days),b=p.from+Math.floor((i+1)*n/p.days)-1;
+  return b<a?'Rest & reflection':(a===b?`${p.book} ${a}`:`${p.book} ${a}–${b}`);
+}
+function portion(p){return p.book?(p.from===p.to?`${p.book} ${p.from}`:`${p.book} ${p.from}–${p.to}`):'Custom reading'}
+function status(p){
+  const done=(p.done||[]).length,t=todayIdx(p),exp=Math.max(0,Math.min(p.days,t+1));
+  if(done>=p.days)return['Completed','ok'];
+  if(t<0)return['Upcoming','mu'];
+  const gap=exp-done;
+  if(gap<=1)return['On track','ok'];
+  return[`${gap} days behind`,gap>=4?'bad':'warn'];
+}
+const pct=p=>p.days?Math.round((p.done||[]).length/p.days*100):0;
+function avgPct(plans){if(!plans.length)return 0;return Math.round(plans.reduce((s,p)=>s+pct(p),0)/plans.length)}
+
+/* ---------------- AUTH ---------------- */
+$('googleBtn').addEventListener('click',()=>{
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>{$('authMsg').textContent=e.message||'Sign-in failed. Please try again.'});
+});
+$('signOut').addEventListener('click',()=>auth.signOut());
+
+auth.onAuthStateChanged(async user=>{
+  S.unsub.forEach(u=>u());S.unsub=[];
+  if(!user){
+    $('authScreen').classList.remove('hide');$('roleScreen').classList.add('hide');$('app').classList.add('hide');
+    return;
+  }
+  S.uid=user.uid;
+  $('whoImg').src=user.photoURL||'';$('whoName').textContent=user.displayName||user.email;
+  const snap=await db.collection('users').doc(user.uid).get();
+  if(!snap.exists){
+    $('authScreen').classList.add('hide');$('roleScreen').classList.remove('hide');
+    S._pendingUser={name:user.displayName||user.email,email:user.email,photoURL:user.photoURL||''};
+    return;
+  }
+  S.me=snap.data();
+  boot();
+});
+
+document.querySelectorAll('.roleCard').forEach(c=>c.addEventListener('click',async()=>{
+  const role=c.dataset.role;
+  const data=Object.assign({role,createdAt:firebase.firestore.FieldValue.serverTimestamp()},S._pendingUser);
+  await db.collection('users').doc(S.uid).set(data);
+  S.me=data;
+  $('roleScreen').classList.add('hide');
+  boot();
+}));
+
+function boot(){
+  $('app').classList.remove('hide');
+  const isLeader=S.me.role==='leader';
+  $('leaderTab').classList.toggle('hide',!isLeader);
+  $('meTab').classList.toggle('hide',isLeader);
+  $('pBook').innerHTML=BOOKS.map(b=>`<option>${b[0]}</option>`).join('')+'<option value="">Custom / topical reading</option>';
+  $('pBook').value='John';fillBook();$('pStart').value=iso(new Date());
+  setTab(isLeader?'leader':'me');
+
+  // my plans (members only)
+  if(!isLeader){
+    const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
+      S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
+      if(S.tab==='me')renderMe();
+    },()=>{});
+    S.unsub.push(u1);
+  }
+  // all users (for names/roles) — leader reads all, member reads all (needed for leaderboard names)
+  const u2=db.collection('users').onSnapshot(s=>{
+    S.members={};s.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
+    if(S.tab==='board')renderBoard();if(S.tab==='leader')renderLeader();
+  },()=>{});
+  S.unsub.push(u2);
+  // all plans — leader reads all; members can read all too (rules allow it) for leaderboard math
+  const u3=db.collection('plans').onSnapshot(s=>{
+    S.allPlans={};s.docs.forEach(d=>{const p={id:d.id,...d.data()};(S.allPlans[p.uid]=S.allPlans[p.uid]||[]).push(p)});
+    if(S.tab==='board')renderBoard();if(S.tab==='leader')renderLeader();
+  },()=>{});
+  S.unsub.push(u3);
+}
+
+/* ---------------- MY READING ---------------- */
+function fillBook(){
+  const b=BOOKS.find(x=>x[0]===$('pBook').value);
+  $('rangeRow').classList.toggle('hide',!b);
+  if(b){$('pFrom').max=b[1];$('pTo').max=b[1];$('pFrom').value=1;$('pTo').value=b[1]}
+}
+$('pBook').addEventListener('change',fillBook);
+
+async function create(){
+  const msg=$('msg'),name=$('pName').value.trim(),days=parseInt($('pDays').value,10),start=$('pStart').value;
+  const bk=BOOKS.find(x=>x[0]===$('pBook').value);
+  let from=parseInt($('pFrom').value,10),to=parseInt($('pTo').value,10);
+  if(!name)return msg.textContent='Please give your plan a title.';
+  if(!(days>=1&&days<=366))return msg.textContent='Days must be between 1 and 366.';
+  if(!start)return msg.textContent='Please choose a start date.';
+  if(bk&&!(from>=1&&to>=from&&to<=bk[1]))return msg.textContent=`${bk[0]} has ${bk[1]} chapters; please check your range.`;
+  const p={uid:S.uid,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  if(bk){p.book=bk[0];p.from=from;p.to=to}
+  msg.textContent='';$('create').disabled=true;
+  try{await db.collection('plans').add(p);$('pName').value='';$('pNotes').value=''}
+  catch(e){msg.textContent='Could not save your plan. Please try again.'}
+  $('create').disabled=false;
+}
+$('create').addEventListener('click',create);
+
+function renderMe(){
+  const ps=S.plans;
+  if(!ps.length){$('plansCol').innerHTML='<div class="card"><div class="empty">No reading plan yet.<br>Create your first plan to begin your journey through Scripture.</div></div>';return}
+  if(!ps.some(p=>p.id===S.sel))S.sel=ps[0].id;
+  const p=ps.find(x=>x.id===S.sel),t=todayIdx(p),[st,cl]=status(p);
+  const chips=ps.map(x=>`<button class="chip ${x.id===S.sel?'on':''}" data-sel="${x.id}">${esc(x.name)}</button>`).join('');
+  let td='';
+  const done=p.done||[];
+  if(done.length>=p.days)td='<div class="today"><small>Well done</small><b>You have completed this plan.</b></div>';
+  else if(t<0)td=`<div class="today"><small>Begins</small><b>${dayOf(p,0).toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}</b></div>`;
+  else{const i=Math.min(t,p.days-1);td=`<div class="today"><small>Today · Day ${i+1}</small><b>${esc(reading(p,i))}</b></div>`}
+  const rows=Array.from({length:p.days},(_,i)=>{
+    const d=done.includes(i);
+    return `<button class="day ${d?'done':''} ${i===t?'now':''}" data-day="${i}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></button>`}).join('');
+  $('plansCol').innerHTML=`<div class="chips">${chips}</div>
+  <div class="card">
+    <div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days<span class="tag ${cl}">${st}</span></div></div><div class="pct">${pct(p)}%</div></div>
+    <div class="bar"><i style="width:${pct(p)}%"></i></div>
+    <div class="sub" style="margin:.5rem 0 0">${done.length} of ${p.days} days completed</div>
+    ${p.notes?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
+    ${td}
+    <div class="days">${rows}</div>
+    <div style="margin-top:1.1rem;text-align:right">${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</div>
+  </div>`;
+}
+
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke]');if(!t)return;
+  if(t.dataset.tab)return setTab(t.dataset.tab);
+  if(t.dataset.sel){S.sel=t.dataset.sel;S.del=null;return renderMe()}
+  if(t.dataset.cancel){S.del=null;return renderMe()}
+  if(t.dataset.del){
+    if(S.del!==t.dataset.del){S.del=t.dataset.del;return renderMe()}
+    await db.collection('plans').doc(S.del).delete();S.del=null;return;
+  }
+  if(t.dataset.day!==undefined){
+    const p=S.plans.find(x=>x.id===S.sel),i=+t.dataset.day,arr=(p.done||[]).slice(),k=arr.indexOf(i);
+    k<0?arr.push(i):arr.splice(k,1);arr.sort((a,b)=>a-b);
+    await db.collection('plans').doc(p.id).update({done:arr,lastReadAt:firebase.firestore.FieldValue.serverTimestamp()});
+    return;
+  }
+  if(t.dataset.open){S.open[t.dataset.open]=!S.open[t.dataset.open];renderLeader()}
+  if(t.dataset.poke)return sendPoke(t.dataset.poke,t);
+});
+
+/* ---------------- LEADERBOARD ---------------- */
+function renderBoard(){
+  const rows=Object.values(S.members).filter(m=>m.role==='member').map(m=>({m,plans:S.allPlans[m.id]||[]}))
+    .map(x=>({...x,avg:avgPct(x.plans),active:x.plans.length}))
+    .sort((a,b)=>b.avg-a.avg);
+  if(!rows.length){$('boardRows').innerHTML='<div class="empty">No members have started a plan yet.</div>';return}
+  const medals=['🥇','🥈','🥉'];
+  $('boardRows').innerHTML=rows.map((r,i)=>{
+    const mine=r.m.id===S.uid;
+    return `<div class="lbrow">
+      <div class="rank">${medals[i]||(i+1)}</div>
+      <img src="${esc(r.m.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
+      <div style="flex:1"><div class="lbname">${esc(r.m.name)}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${r.active} plan${r.active===1?'':'s'} · ${r.avg}% average</div></div>
+      <div class="lbbar bar"><i style="width:${r.avg}%"></i></div>
+      ${mine?'':`<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button>`}
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- LEADER DASHBOARD ---------------- */
+function renderLeader(){
+  const rows=Object.values(S.members).filter(m=>m.role==='member').map(m=>({m,plans:S.allPlans[m.id]||[]})).sort((a,b)=>(a.m.name||'').localeCompare(b.m.name||''));
+  const all=rows.flatMap(r=>r.plans),avg=all.length?Math.round(all.reduce((s,p)=>s+pct(p),0)/all.length):0;
+  const needs=rows.filter(r=>r.plans.some(p=>status(p)[1]==='bad'||status(p)[1]==='warn')).length;
+  let h=`<div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
+  if(!rows.length)h+='<div class="card"><div class="empty">No member has created a plan yet.<br>Progress will appear here as your group begins reading.</div></div>';
+  rows.forEach(r=>{
+    h+=`<div class="card mem"><h3>${esc(r.m.name||'Unnamed member')}<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button></h3>`+
+      (r.plans.length?r.plans.map(p=>{
+        const k=r.m.id+'/'+p.id,[st,cl]=status(p),done=p.done||[];
+        const dots=S.open[k]?`<div class="dots">${Array.from({length:p.days},(_,i)=>`<i class="${done.includes(i)?'d':''}" title="${esc(reading(p,i))}">${i+1}</i>`).join('')}</div>`:'';
+        return `<div class="pl" data-open="${esc(k)}"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span><br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div>${dots}</div>`}).join(''):'<div class="sub">No plan created yet.</div>');
+    h+='</div>';
+  });
+  $('leaderView').innerHTML=h;
+}
+
+function setTab(t){
+  S.tab=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('meView').classList.toggle('hide',t!=='me');
+  $('boardView').classList.toggle('hide',t!=='board');
+  $('leaderView').classList.toggle('hide',t!=='leader');
+  if(t==='board')renderBoard();if(t==='leader')renderLeader();if(t==='me')renderMe();
+}
+
+/* ---------------- POKE ---------------- */
+async function sendPoke(toUid,btn){
+  const to=S.members[toUid];if(!to||!to.email)return toast('Could not find that person\'s email.');
+  const pairId=S.uid+'_'+toUid;
+  btn.disabled=true;
+  try{
+    const cd=await db.collection('pokeLog').doc(pairId).get();
+    if(cd.exists){
+      const last=cd.data().lastAt?.toMillis?.()||0;
+      if(Date.now()-last<POKE_COOLDOWN_MS){toast(`You already poked ${to.name.split(' ')[0]} recently — give it a little time.`);btn.disabled=false;return}
+    }
+    const fromName=S.me.name||'Someone in your DG';
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: to.email,
+      to_name: to.name || '',
+      from_name: fromName,
+      message: `${fromName} poked you. Time to read the Bible! Open your tracker and catch up on today's reading.`
+    });
+    await db.collection('pokeLog').doc(pairId).set({from:S.uid,to:toUid,lastAt:firebase.firestore.FieldValue.serverTimestamp()});
+    toast(`Poked ${to.name.split(' ')[0]} — an email nudge is on its way.`);
+  }catch(e){toast('Could not send the poke. Please try again.')}
+  btn.disabled=false;
+}
+</script>
+</body>
+</html>
