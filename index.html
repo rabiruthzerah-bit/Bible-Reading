@@ -178,6 +178,17 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
   </div>
 </div>
 
+<!-- ===================== WAIT SCREEN ===================== -->
+<div id="waitScreen" class="center hide">
+  <div class="card authCard" style="max-width:480px">
+    <div class="eyebrow" id="waitEyebrow">Request sent</div>
+    <h1 style="font-size:1.8rem" id="waitTitle"></h1>
+    <p class="sub" id="waitText"></p>
+    <button class="btn full" id="waitBtn"></button>
+    <button class="signout" id="waitOut" style="margin-top:.9rem">Sign out</button>
+  </div>
+</div>
+
 <!-- ===================== APP ===================== -->
 <div id="app" class="hide">
 <div class="topbar">
@@ -300,7 +311,7 @@ const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deut
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S={tab:'dgs',editPlan:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+const S={tab:'dgs',editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
@@ -354,7 +365,7 @@ $('googleBtn').addEventListener('click',()=>{
 });
 $('signOut').addEventListener('click',()=>auth.signOut());
 
-const SCREENS=['authScreen','roleScreen','nameScreen','dgScreen','app'];
+const SCREENS=['authScreen','roleScreen','nameScreen','dgScreen','waitScreen','app'];
 function applyTheme(role){document.body.classList.toggle('leader',role==='leader')}
 function showScreen(id){SCREENS.forEach(x=>$(x).classList.toggle('hide',x!==id))}
 
@@ -379,7 +390,7 @@ auth.onAuthStateChanged(async user=>{
 function route(){
   applyTheme(S.me.role);
   if(!S.me.nameSet){S._role=null;showScreen('nameScreen');$('nameIn').focus();return}
-  if(!S.me.dgId){openDg(false);return}
+  if(!S.me.dgId){S.me.role==='member'?startNoDg():openDg(false);return}
   boot();
 }
 
@@ -436,12 +447,12 @@ async function loadUsers(){
   sn.docs.forEach(d=>S.members[d.id]={id:d.id,...d.data()});
 }
 function renderDgPick(){
-  const gs=groups().sort((a,b)=>a.name.localeCompare(b.name));
-  if(!gs.length){$('dgList').innerHTML='<div class="empty">No DG has been set up yet.<br>Ask your DG leader to sign up first, then come back.</div>';return}
+  const gs=groups().filter(g=>g.id!==(S.me&&S.me.dgId)).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!gs.length){$('dgList').innerHTML=S.me&&S.me.dgId?'<div class="empty">There are no other DGs yet.</div>':'<div class="empty">No DG has been set up yet.<br>Ask your DG leader to sign up first, then come back.</div>';return}
   $('dgList').innerHTML=gs.map(g=>`<div class="roleCard ${S._dgPick===g.id?'sel':''}" data-dgpick="${esc(g.id)}" style="margin-bottom:.7rem"><b>${esc(g.name)}</b><span>Led by ${esc(g.leader.name||'Unnamed')}</span></div>`).join('');
 }
 async function openDg(edit){
-  S._dgEdit=!!edit;S._dgPick=(S.me&&S.me.dgId)||null;
+  S._dgEdit=!!edit;S._dgPick=null;
   const leader=S.me.role==='leader';
   showScreen('dgScreen');
   $('dgMsg').textContent='';$('dgCancel').classList.toggle('hide',!edit);
@@ -454,9 +465,9 @@ async function openDg(edit){
     $('dgIn').value=S.me.dgName||'';$('dgIn').focus();
   }else{
     $('dgEyebrow').textContent=edit?'Your DG':'Discipleship Group';
-    $('dgTitle').textContent=edit?'Switch your DG':'Which DG are you in?';
-    $('dgText').textContent="Pick your group. Check the leader's name to be sure you're joining the right one.";
-    $('dgBtn').textContent='Join this DG';
+    $('dgTitle').textContent=edit?'Request to switch DG':'Which DG are you in?';
+    $('dgText').textContent="Pick your group and check the leader's name. You'll be in once that DG's leader accepts your request.";
+    $('dgBtn').textContent='Send join request';
     $('dgList').innerHTML='<div class="empty">Loading DGs…</div>';
     try{await loadUsers();renderDgPick()}
     catch(e){$('dgList').innerHTML='<div class="empty">Could not load the DG list. Please refresh.</div>'}
@@ -475,13 +486,19 @@ async function saveDg(){
       if(taken){msg.textContent='A DG with that name already exists. Please choose a different name.';return}
       await ref.set({dgName:name,dgId:S.uid},{merge:true});
       S.me={...S.me,dgName:name,dgId:S.uid};
+      if(S._dgEdit){S._dgEdit=false;boot();toast('Saved.')}
+      else boot();
     }else{
       if(!S._dgPick){msg.textContent='Please select your DG.';return}
-      await ref.set({dgId:S._dgPick},{merge:true});
-      S.me={...S.me,dgId:S._dgPick};
+      const g=groups().find(x=>x.id===S._dgPick);
+      if(!g){msg.textContent='That DG is no longer available. Please pick another.';return}
+      await db.collection('joinRequests').doc(S.uid).set({
+        uid:S.uid,name:S.me.name||'',photoURL:S.me.photoURL||'',
+        toDg:g.id,toDgName:g.name,toLeaderName:g.leader.name||'the DG leader',
+        fromDgName:dgName()||'',status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      if(S._dgEdit){S._dgEdit=false;showScreen('app');renderTab();toast('Request sent. Your DG leader will review it.')}
     }
-    if(S._dgEdit){S._dgEdit=false;boot();toast('Saved.')}
-    else boot();
   }catch(e){msg.textContent='Could not save. Please try again.'}
   finally{$('dgBtn').disabled=false}
 }
@@ -493,6 +510,31 @@ $('dgList').addEventListener('click',e=>{
   const c=e.target.closest('[data-dgpick]');if(!c)return;
   S._dgPick=c.dataset.dgpick;renderDgPick();
 });
+function showWait(declined){
+  const r=S.myReq;showScreen('waitScreen');
+  $('waitEyebrow').textContent=declined?'Request declined':'Request sent';
+  $('waitTitle').textContent=declined?'Not accepted this time':'Waiting for approval';
+  $('waitText').textContent=declined
+    ?`${r.toLeaderName} didn't accept your request to join ${r.toDgName}. You can choose a different DG.`
+    :`Your request to join ${r.toDgName} has been sent to ${r.toLeaderName}. You'll get in as soon as they accept. This page updates by itself.`;
+  $('waitBtn').textContent=declined?'Choose another DG':'Cancel request';
+}
+$('waitBtn').addEventListener('click',()=>db.collection('joinRequests').doc(S.uid).delete().catch(()=>toast('Could not update your request. Please try again.')));
+$('waitOut').addEventListener('click',()=>auth.signOut());
+// A member with no DG yet: wait for the leader's decision (or show the picker)
+function startNoDg(){
+  S.unsub.forEach(u=>u());S.unsub=[];
+  S.unsub.push(db.collection('users').doc(S.uid).onSnapshot(sn=>{
+    const d=sn.data();
+    if(d&&d.dgId){S.me={...S.me,...d};boot();toast('Welcome! Your DG leader accepted your request.')}
+  },()=>{}));
+  S.unsub.push(db.collection('joinRequests').doc(S.uid).onSnapshot(sn=>{
+    S.myReq=sn.exists?sn.data():null;
+    if(S.myReq&&S.myReq.status==='pending')showWait(false);
+    else if(S.myReq&&S.myReq.status==='declined')showWait(true);
+    else openDg(false);
+  },()=>openDg(false)));
+}
 function refreshWho(){
   $('whoName').textContent=S.me.name||'';
   const n=dgName();$('whoDg').textContent=n?'· '+n:'';
@@ -500,13 +542,17 @@ function refreshWho(){
 function renderDgs(){
   const gs=groups().sort((a,b)=>((b.id===S.me.dgId)-(a.id===S.me.dgId))||a.name.localeCompare(b.name));
   const isL=S.me.role==='leader';
-  let h=`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. You can open the dashboard of your own DG only.</p></div>`;
+  const r=S.myReq;let banner='';
+  if(r&&!isL)banner=r.status==='pending'
+    ?`<div class="card" style="border-color:var(--gold)"><b>Request pending</b><div class="sub" style="margin:.3rem 0 .8rem">You asked to join <b>${esc(r.toDgName)}</b> (led by ${esc(r.toLeaderName)}). You stay in your current DG until they accept.</div><button class="btn ghost small" data-cancelreq="1">Cancel request</button></div>`
+    :`<div class="card" style="border-color:var(--bad)"><b>Request declined</b><div class="sub" style="margin:.3rem 0 .8rem">${esc(r.toLeaderName)} didn't accept your request to join ${esc(r.toDgName)}.</div><button class="btn ghost small" data-cancelreq="1">Dismiss</button></div>`;
+  let h=banner+`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. You can open the dashboard of your own DG only.</p></div>`;
   if(!gs.length)h+='<div class="card"><div class="empty">No DG has been set up yet.</div></div>';
   h+=gs.map(g=>{
     const mine=g.id===S.me.dgId,n=g.members.length;
     const plans=g.members.flatMap(m=>S.allPlans[m.id]||[]),a=avgPct(plans);
     const body=mine
-      ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Switch DG'}</button></div>`
+      ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}${isL&&S.requests.length?` · <b>${S.requests.length} join request${S.requests.length===1?'':'s'}</b>`:''}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Request to switch DG'}</button></div>`
       :`<div class="sub" style="margin:.8rem 0 0">🔒 Only members of this DG can open its dashboard.</div>`;
     return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b>${mine?` · ${n} member${n===1?'':'s'}`:''}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
   }).join('');
@@ -514,6 +560,7 @@ function renderDgs(){
 }
 function renderTab(){
   refreshWho();
+  if(S.me.role==='leader')$('leaderTab').textContent='Leader Dashboard'+(S.requests.length?` (${S.requests.length})`:'');
   if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='leader')renderLeader();
 }
 function boot(){
@@ -525,6 +572,20 @@ function boot(){
   buildBooks();$('pStart').value=iso(new Date());
   setTab('dgs'); // first thing everyone sees: the list of DGs
 
+  // my own profile (so an accepted DG change takes effect right away) and my join request
+  S.unsub.push(db.collection('users').doc(S.uid).onSnapshot(sn=>{
+    const d=sn.data();if(!d)return;
+    const moved=d.dgId!==S.me.dgId;
+    S.me={...S.me,...d};
+    if(moved){boot();toast('Your request was accepted. Welcome to your new DG!')}
+  },()=>{}));
+  S.myReq=null;S.requests=[];
+  S.unsub.push(db.collection('joinRequests').doc(S.uid).onSnapshot(sn=>{S.myReq=sn.exists?sn.data():null;renderTab()},()=>{}));
+  if(isLeader)S.unsub.push(db.collection('joinRequests').where('toDg','==',S.uid).onSnapshot(sn=>{
+    S.requests=sn.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status==='pending')
+      .sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
+    renderTab();
+  },()=>{}));
   // my plans (members and leaders)
   const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
     S.plans=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -675,8 +736,20 @@ function renderMe(){
 }
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit]');if(!t)return;
+  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit],[data-accept],[data-decline],[data-cancelreq]');if(!t)return;
   if(t.dataset.tab)return setTab(t.dataset.tab);
+  if(t.dataset.cancelreq)return db.collection('joinRequests').doc(S.uid).delete().catch(()=>toast('Could not update your request.'));
+  if(t.dataset.decline)return db.collection('joinRequests').doc(t.dataset.decline).update({status:'declined'}).then(()=>toast('Request declined.')).catch(()=>toast('Could not decline. Please try again.'));
+  if(t.dataset.accept){
+    const id=t.dataset.accept;t.disabled=true;
+    try{
+      const b=db.batch();
+      b.update(db.collection('users').doc(id),{dgId:S.uid});
+      b.delete(db.collection('joinRequests').doc(id));
+      await b.commit();toast('Accepted. They are now in your DG.');
+    }catch(err){toast('Could not accept. Please try again.');t.disabled=false}
+    return;
+  }
   if(t.dataset.opendg)return setTab(S.me.role==='leader'?'leader':'board');
   if(t.dataset.dgedit)return openDg(true);
   if(t.dataset.edit){S.editPlan=t.dataset.edit;S.del=null;return renderMe()}
@@ -731,7 +804,8 @@ function renderLeader(){
   const rows=Object.values(S.members).filter(m=>m.role==='member'&&m.dgId===S.me.dgId).map(m=>({m,plans:S.allPlans[m.id]||[]})).sort((a,b)=>(a.m.name||'').localeCompare(b.m.name||''));
   const all=rows.flatMap(r=>r.plans),avg=all.length?Math.round(all.reduce((s,p)=>s+pct(p),0)/all.length):0;
   const needs=rows.filter(r=>r.plans.some(p=>status(p)[1]==='bad'||status(p)[1]==='warn')).length;
-  let h=`<h2 style="margin-bottom:1rem">${esc(dgName())}</h2><div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
+  const reqCard=S.requests.length?`<div class="card" style="margin-bottom:1.5rem;border-color:var(--gold)"><h2>Join requests</h2><p class="sub">These people asked to join ${esc(dgName())}. They can only see your DG once you accept.</p>${S.requests.map(q=>`<div class="lbrow"><img src="${esc(q.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)"><div style="flex:1"><div class="lbname">${esc(q.name||'Unnamed')}</div><div class="lbsub">${q.fromDgName?'Currently in '+esc(q.fromDgName):'New to the tracker'}</div></div><button class="btn small" data-accept="${esc(q.id)}">Accept</button> <button class="btn ghost small" data-decline="${esc(q.id)}">Decline</button></div>`).join('')}</div>`:'';
+  let h=`<h2 style="margin-bottom:1rem">${esc(dgName())}</h2>${reqCard}<div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
   if(!rows.length)h+='<div class="card"><div class="empty">No member has created a plan yet.<br>Progress will appear here as your group begins reading.</div></div>';
   rows.forEach(r=>{
     h+=`<div class="card mem"><h3>${esc(r.m.name||'Unnamed member')}<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button></h3>`+
