@@ -103,7 +103,14 @@ textarea{resize:vertical;min-height:60px}
 .lbname{flex:1;font-weight:600}
 .lbsub{font-size:.75rem;color:var(--muted)}
 .lbbar{width:110px}
-.poke{font-size:.76rem;padding:.35rem .8rem}
+.poke{font-size:.76rem;padding:.35rem .8rem;position:relative}
+.poke[data-tip]:hover::after,.poke[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;right:0;bottom:calc(100% + 8px);width:220px;background:var(--ink);color:var(--card);font:500 .72rem/1.35 var(--sans);letter-spacing:0;text-transform:none;text-align:left;padding:.5rem .65rem;border-radius:8px;z-index:30;pointer-events:none;white-space:normal;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.day.ro{cursor:default}.day.ro:hover{background:none}
+.tabverse{font:italic 500 1.02rem/1.4 var(--serif);color:var(--muted);text-align:center;margin:-.7rem auto 1.5rem;max-width:620px}
+.ti{margin-right:.4rem}
+.badge{display:inline-block;min-width:1.2rem;padding:0 .35rem;margin-left:.45rem;border-radius:999px;background:var(--bad);color:#fff;font:600 .7rem/1.2rem var(--sans);text-align:center}
+.pokeNote{position:fixed;left:max(1rem,env(safe-area-inset-left,0px));bottom:max(1rem,env(safe-area-inset-bottom,0px));z-index:25;max-width:min(330px,calc(100vw - 2rem));display:flex;gap:.6rem;align-items:flex-start;background:var(--card);color:var(--ink);border:1px solid var(--gold);border-radius:12px;padding:.7rem .9rem;font-size:.8rem;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.pokeNote button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1;padding:0 0 0 .2rem}
 .books{max-height:250px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:.3rem .4rem .5rem}
 .bkgrp{font:600 .68rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);padding:.6rem .3rem .2rem}
 .bkgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
@@ -152,7 +159,7 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
     <h1 style="font-size:1.8rem">How will you use the tracker?</h1>
     <p class="sub">You can't switch this later without asking your DG leader.</p>
     <div class="roleGrid">
-      <div class="roleCard" data-role="member"><b>DG Member</b><span>Join your DG, build your own reading plan, track daily progress, and see your group's leaderboard.</span></div>
+      <div class="roleCard" data-role="member"><b>DG Member</b><span>Join your DG, build your own reading plan, and read alongside your group.</span></div>
       <div class="roleCard" data-role="leader"><b>DG Leader</b><span>Start your DG, see every member's progress, and encourage the group.</span></div>
     </div>
   </div>
@@ -212,12 +219,12 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
 </header>
 
 <nav class="tabs" id="tabs">
-  <button class="tab on" data-tab="me" id="meTab">My Reading</button>
-  <button class="tab" data-tab="dgs" id="dgsTab">DGs</button>
-  <button class="tab" data-tab="board" id="boardTab">DG Leaderboard</button>
-  <button class="tab" data-tab="global" id="globalTab">Global Leaderboard</button>
-  <button class="tab hide" data-tab="leader" id="leaderTab">Leader Dashboard</button>
+  <button class="tab on" data-tab="me" id="meTab"><span class="ti">🍞</span>Daily Bread</button>
+  <button class="tab" data-tab="dash" id="dashTab"><span class="ti">🕯️</span>Upper Room<span class="badge hide" id="reqBadge"></span></button>
+  <button class="tab" data-tab="dgs" id="dgsTab"><span class="ti">🐑</span>The Fold</button>
+  <button class="tab" data-tab="global" id="globalTab"><span class="ti">☁️</span>Cloud of Witnesses</button>
 </nav>
+<p class="tabverse" id="tabVerse"></p>
 
 <section id="meView" class="hide">
   <div id="plansCol"></div>
@@ -225,7 +232,7 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
 
 <section id="createView" class="hide">
   <div class="createWrap">
-    <button class="back" data-tab="me">← Back to My Reading</button>
+    <button class="back" data-tab="me">← Back to Daily Bread</button>
     <div class="card">
       <h2>Create a Plan</h2>
       <p class="sub">Design a reading rhythm that fits your season.</p>
@@ -270,29 +277,22 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
 
 <section id="dgView" class="hide"></section>
 
-<section id="boardView" class="hide">
-  <div class="card">
-    <h2 id="boardTitle">Leaderboard</h2>
-    <p class="sub">See who's reading consistently — and give someone a nudge.</p>
-    <div id="boardRows"></div>
-  </div>
-</section>
-
 <section id="globalView" class="hide">
   <div class="card">
-    <h2 id="gTitle">Global Leaderboard</h2>
+    <h2 id="gTitle">Cloud of Witnesses</h2>
     <p class="sub" id="gSub"></p>
     <div class="chips" id="gChips"></div>
     <div id="globalRows"></div>
   </div>
 </section>
 
-<section id="leaderView" class="hide"></section>
+<section id="dashView" class="hide"></section>
 <p class="note" id="note"></p>
 </div>
 <button class="fab hide" id="fabCreate" data-tab="create"><b>+</b> Create a Plan</button>
 </div>
 
+<div class="pokeNote hide" id="pokeNote"><span>👋</span><div><b>Easy on the poking!</b><br>We only have 200 emails a month for everyone here, so choose who you poke wisely.</div><button id="pokeNoteX" aria-label="Dismiss">×</button></div>
 <div class="toast" id="toast"></div>
 
 <!-- Firebase (compat SDK — simplest for a single static file) -->
@@ -335,7 +335,7 @@ const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deut
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S={gTab:'people',viewDg:null,aEdit:null,aDel:null,audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+const S={gTab:'people',viewDg:null,dashDg:null,viewUser:null,brgSel:{},brgQ:'',pokeNoteHidden:false,aEdit:null,aDel:null,audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
@@ -437,7 +437,7 @@ async function saveName(){
       S.me={...S.me,name,nameSet:true};
     }
     if(S._editing){
-      resetNameScreen();showScreen('app');$('whoName').textContent=S.me.name;syncBoard();toast('Name updated.');
+      resetNameScreen();showScreen('app');$('whoName').textContent=S.me.name;toast('Name updated.');
     }else route();
   }catch(e){msg.textContent='Could not save your name. Please try again.'}
   $('nameBtn').disabled=false;
@@ -463,7 +463,8 @@ $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')saveName()});
 // A DG lives on its leader's user doc (dgName). The DG id is the leader's uid, so a DG can only ever have one leader.
 function groups(){
   const all=Object.values(S.members);
-  return all.filter(m=>m.role==='leader'&&m.dgName).map(l=>({id:l.id,name:l.dgName,leader:l,members:all.filter(m=>m.role==='member'&&m.dgId===l.id)}));
+  // a DG's readers: its members, plus any leader who joined it as their one "other" DG
+  return all.filter(m=>m.role==='leader'&&m.dgName).map(l=>({id:l.id,name:l.dgName,leader:l,members:all.filter(m=>m.id!==l.id&&((m.role==='member'&&m.dgId===l.id)||(m.role==='leader'&&m.memberDgId===l.id)))}));
 }
 function dgName(){const g=S.members[S.me&&S.me.dgId];return g&&g.dgName?g.dgName:''}
 async function loadUsers(){
@@ -561,76 +562,74 @@ function startNoDg(){
 }
 function refreshWho(){
   $('whoName').textContent=S.me.name||'';
-  const n=dgName();$('whoDg').textContent=n?'· '+n:'';
+  const n=dgName(),g2=S.me.memberDgId&&S.members[S.me.memberDgId];
+  $('whoDg').textContent=n?'· '+n+(g2&&g2.dgName?' · also in '+g2.dgName:''):'';
 }
 function renderDgs(){
-  const gs=groups().sort((a,b)=>((b.id===S.me.dgId)-(a.id===S.me.dgId))||a.name.localeCompare(b.name));
-  const isL=S.me.role==='leader';
-  const r=S.myReq;let banner='';
-  if(r&&!isL)banner=r.status==='pending'
-    ?`<div class="card" style="border-color:var(--gold)"><b>Request pending</b><div class="sub" style="margin:.3rem 0 .8rem">You asked to join <b>${esc(r.toDgName)}</b> (led by ${esc(r.toLeaderName)}). You stay in your current DG until they accept.</div><button class="btn ghost small" data-cancelreq="1">Cancel request</button></div>`
+  const rank=g=>g.id===S.me.dgId?2:g.id===S.me.memberDgId?1:0;
+  const gs=groups().sort((a,b)=>(rank(b)-rank(a))||a.name.localeCompare(b.name));
+  const isL=S.me.role==='leader',ppl=people(),r=S.myReq;
+  let banner='';
+  if(r)banner=r.status==='pending'
+    ?`<div class="card" style="border-color:var(--gold)"><b>Request pending</b><div class="sub" style="margin:.3rem 0 .8rem">You asked to join <b>${esc(r.toDgName)}</b> (led by ${esc(r.toLeaderName)}). ${isL?'You will be added as a member once they accept.':'You stay in your current DG until they accept.'}</div><button class="btn ghost small" data-cancelreq="1">Cancel request</button></div>`
     :`<div class="card" style="border-color:var(--bad)"><b>Request declined</b><div class="sub" style="margin:.3rem 0 .8rem">${esc(r.toLeaderName)} didn't accept your request to join ${esc(r.toDgName)}.</div><button class="btn ghost small" data-cancelreq="1">Dismiss</button></div>`;
-  let h=banner+`<div class="card"><h2>Discipleship Groups</h2><p class="sub" style="margin:0">Every DG using the tracker. Open any DG to see how its members are reading; only your own DG's dashboard shows full plan details.</p></div>`;
+  let h=banner+`<div class="card"><h2>The Fold</h2><p class="sub" style="margin:0">Every group, gathered in one place. Step into any of them to see what its people are reading.${isL?' As a leader, you can also join one other DG as a member.':''}</p></div>`;
   if(!gs.length)h+='<div class="card"><div class="empty">No DG has been set up yet.</div></div>';
   h+=gs.map(g=>{
-    const mine=g.id===S.me.dgId,n=g.members.length;
-    const plans=g.members.flatMap(m=>S.allPlans[m.id]||[]),a=avgPct(plans);
-    const body=mine
-      ?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${a}%"></i></div><div class="sub" style="margin:0 0 1rem">${a}% average completion · ${plans.length} active plan${plans.length===1?'':'s'}${isL&&S.requests.length?` · <b>${S.requests.length} join request${S.requests.length===1?'':'s'}</b>`:''}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-opendg="1">Open dashboard</button><button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Request to switch DG'}</button></div>`
-      :(()=>{const gg=globalGroups().find(x=>x.id===g.id);return gg?`<div class="bar" style="margin:1rem 0 .4rem"><i style="width:${gg.avg}%"></i></div><div class="sub" style="margin:0 0 1rem">${gg.avg}% average completion · ${gg.reading} of ${gg.rows.length} reading · ${gg.plans} plan${gg.plans===1?'':'s'}</div><button class="btn small" data-gopen="${esc(g.id)}">View progress</button>`:`<div class="sub" style="margin:.8rem 0 0">No progress shared yet.</div>`})();
-    return `<div class="card dgc ${mine?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b>${mine?` · ${n} member${n===1?'':'s'}`:''}</div></div>${mine?'<span class="tag ok">Your DG</span>':''}</div>${body}</div>`;
+    const mine=g.id===S.me.dgId,second=g.id===S.me.memberDgId;
+    const rows=ppl.filter(x=>x.dgId===g.id||x.memberDgId===g.id);
+    const plans=rows.reduce((t,x)=>t+x.plans,0);
+    const a=plans?Math.round(rows.reduce((t,x)=>t+x.avg*x.plans,0)/plans):0;
+    const today=rows.filter(x=>whenTxt(x.last,x.plans>0)==='read today').length;
+    const btns=[`<button class="btn small" data-opendg="${esc(g.id)}">Open dashboard</button>`];
+    if(mine)btns.push(`<button class="btn ghost small" data-dgedit="1">${isL?'Rename DG':'Request to switch DG'}</button>`);
+    else if(second)btns.push(`<button class="btn ghost small del" data-leave2="1">Leave this DG</button>`);
+    else if(isL&&!S.me.memberDgId)btns.push(`<button class="btn ghost small" data-reqjoin="${esc(g.id)}">Join as a member</button>`);
+    return `<div class="card dgc ${mine||second?'mine':''}"><div class="head" style="margin-bottom:0"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b> · ${rows.length} reader${rows.length===1?'':'s'}</div></div>${mine?'<span class="tag ok">Your DG</span>':second?'<span class="tag ok">Your other DG</span>':''}</div><div class="sub" style="margin:.8rem 0 1rem">${today} read today · ${plans} plan${plans===1?'':'s'} · ${a}% average${mine&&isL&&S.requests.length?` · <b>${S.requests.length} join request${S.requests.length===1?'':'s'}</b>`:''}</div><div style="display:flex;gap:.5rem;flex-wrap:wrap">${btns.join('')}</div></div>`;
   }).join('');
-  $('dgView').innerHTML=h;
+  setHtml($('dgView'),h);
 }
 function renderTab(){
   refreshWho();
-  if(S.me.role==='leader')$('leaderTab').textContent='Leader Dashboard'+(S.requests.length?` (${S.requests.length})`:'');
-  if(S.tab==='dgs')renderDgs();else if(S.tab==='board')renderBoard();else if(S.tab==='global')renderGlobal();else if(S.tab==='leader'){if(!S.aEdit)renderLeader()}
+  const n=S.requests.length,b=$('reqBadge');
+  b.textContent=n;b.classList.toggle('hide',!(S.me.role==='leader'&&n));
+  if(S.tab==='dgs')renderDgs();else if(S.tab==='global')renderGlobal();else if(S.tab==='dash'){if(!S.aEdit)renderDash()}
 }
 function boot(){
-  S.unsub.forEach(u=>u());S.unsub=[];S._leaders={};S._dgUsers={};S._fixed={};S.plansLoaded=false;S._lastBoard=null;
+  S.unsub.forEach(u=>u());S.unsub=[];S.globalErr=false;S.plansLoaded=false;S.dashDg=null;S.viewUser=null;S.viewDg=null;S._daysPlan=null;
   showScreen('app');
   refreshWho();
-  const isLeader=S.me.role==='leader';
-  $('leaderTab').classList.toggle('hide',!isLeader);
   buildBooks();$('pStart').value=iso(new Date());
   setTab('me'); // signed-in users land on their own reading
 
   // my own profile (so an accepted DG change takes effect right away) and my join request
   S.unsub.push(db.collection('users').doc(S.uid).onSnapshot(sn=>{
     const d=sn.data();if(!d)return;
-    const moved=d.dgId!==S.me.dgId;
-    S.me={...S.me,...d};
-    if(moved){boot();toast('Your request was accepted. Welcome to your new DG!')}
+    const moved=d.dgId!==S.me.dgId,joined2=d.memberDgId&&d.memberDgId!==S.me.memberDgId;
+    S.me=d;
+    if(moved){boot();toast('Your request was accepted. Welcome to your new DG!');return}
+    if(joined2)toast('Your request was accepted. You joined another DG as a member!');
+    renderTab();
   },()=>{}));
   S.myReq=null;S.requests=[];
   S.unsub.push(db.collection('joinRequests').doc(S.uid).onSnapshot(sn=>{S.myReq=sn.exists?sn.data():null;renderTab()},()=>{}));
-  if(isLeader)S.unsub.push(db.collection('joinRequests').where('toDg','==',S.uid).onSnapshot(sn=>{
-    S.requests=sn.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status==='pending')
-      .sort((a,b)=>(a.createdAt?.toMillis?.()||0)-(b.createdAt?.toMillis?.()||0));
+  if(S.me.role==='leader')S.unsub.push(db.collection('joinRequests').where('toDg','==',S.uid).onSnapshot(sn=>{
+    S.requests=sn.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.status==='pending').sort((a,b)=>tsOf(a)-tsOf(b));
     renderTab();
   },()=>{}));
-  // my plans (members and leaders)
-  const u1=db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
-    S.plans=s.docs.map(d=>({id:d.id,...d.data()}));S.plansLoaded=true;syncBoard();
-    // tag older plans with the owner's DG (needed so the DG can see them under the security rules)
-    S.plans.forEach(p=>{if(!p.assignedBy&&p.dgId!==S.me.dgId&&!S._fixed[p.id]){S._fixed[p.id]=1;db.collection('plans').doc(p.id).update({dgId:S.me.dgId}).catch(()=>{})}});
+  // my plans
+  S.unsub.push(db.collection('plans').where('uid','==',S.uid).onSnapshot(s=>{
+    S.plans=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>tsOf(a)-tsOf(b));S.plansLoaded=true;
     if(S.tab==='me'&&!S.editPlan)renderMe();
-  },()=>{});
-  S.unsub.push(u1);
-  // users: every DG leader (for the DG list) + everyone in MY DG only
-  const mergeUsers=()=>{S.members={...S._leaders,...S._dgUsers};syncBoard();renderTab();if(S.tab==='create')renderAudience()};
+  },()=>{}));
+  // everyone using the app (names, roles, DGs) and everyone's plans: all of it is read-only in the UI
   const toMap=sn=>{const m={};sn.docs.forEach(d=>m[d.id]={id:d.id,...d.data()});return m};
-  S.unsub.push(db.collection('users').where('role','==','leader').onSnapshot(sn=>{S._leaders=toMap(sn);mergeUsers()},()=>{}));
-  S.unsub.push(db.collection('users').where('dgId','==',S.me.dgId).onSnapshot(sn=>{S._dgUsers=toMap(sn);mergeUsers()},()=>{}));
-  // everyone's public progress summary (powers the Global Leaderboard)
-  S.unsub.push(db.collection('leaderboard').onSnapshot(sn=>{S.global=sn.docs.map(d=>d.data());S.globalErr=false;renderTab()},()=>{S.globalErr=true;renderTab()}));
-  // plans of my DG only
-  const u3=db.collection('plans').where('dgId','==',S.me.dgId).onSnapshot(s=>{
+  S.unsub.push(db.collection('users').onSnapshot(sn=>{S.members=toMap(sn);S.globalErr=false;renderTab();if(S.tab==='create')refreshAudience()},()=>{S.globalErr=true;renderTab()}));
+  S.unsub.push(db.collection('plans').onSnapshot(s=>{
     S.allPlans={};s.docs.forEach(d=>{const p={id:d.id,...d.data()};(S.allPlans[p.uid]=S.allPlans[p.uid]||[]).push(p)});
+    Object.values(S.allPlans).forEach(a=>a.sort((x,y)=>tsOf(x)-tsOf(y)));
     renderTab();
-  },()=>{});
-  S.unsub.push(u3);
+  },()=>{S.globalErr=true;renderTab()}));
 }
 
 /* ---------------- MY READING ---------------- */
@@ -703,21 +702,37 @@ $('bkQuick').addEventListener('click',e=>{
 });
 ['pFrom','pTo','pDays','pPer'].forEach(id=>$(id).addEventListener('input',updateCalc));
 
-function dgMembers(){return Object.values(S.members).filter(m=>m.role==='member'&&m.dgId===S.uid).sort((a,b)=>(a.name||'').localeCompare(b.name||''))}
+function dgMembers(){
+  return Object.values(S.members).filter(m=>m.id!==S.uid&&((m.role==='member'&&m.dgId===S.uid)||(m.role==='leader'&&m.memberDgId===S.uid))).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+}
+function refreshAudience(){if(S.audMode==='brg'&&$('brgList'))renderBrgList();else renderAudience()}
 function renderAudience(){
   const isL=S.me&&S.me.role==='leader';
-  $('audBox').classList.toggle('hide',!isL);
-  $('create').textContent=isL&&S.audMode!=='me'?'Assign Plan':'Create Plan';
-  if(!isL)return;
-  const ms=dgMembers(),n=ms.length;
-  const opts=[['me','Just me'],['all','All my DG members'],['some','Specific members']];
+  const opts=isL?[['me','Just me'],['all','All my DG members'],['some','Specific DG members'],['brg','Bible Reading Group']]:[['me','Just me'],['brg','Bible Reading Group']];
+  if(!opts.some(o=>o[0]===S.audMode))S.audMode='me';
+  $('audBox').classList.remove('hide');
+  $('create').textContent=S.audMode==='me'?'Create Plan':(S.audMode==='brg'?'Create Group Plan':'Assign Plan');
+  const ms=isL?dgMembers():[],n=ms.length;
   let h=`<div class="chips" style="margin-bottom:.5rem">${opts.map(o=>`<button type="button" class="chip ${S.audMode===o[0]?'on':''}" data-aud="${o[0]}">${o[1]}</button>`).join('')}</div>`;
   if(S.audMode==='all')h+=`<p class="sub" style="margin:0 0 .4rem">${n?`Each of your ${n} member${n===1?'':'s'} gets their own copy of this plan and tracks their own progress. Anyone who joins later won't receive it.`:'You have no DG members yet.'}</p>`;
   if(S.audMode==='some')h+=n?`<div class="books" style="max-height:180px">${ms.map(m=>`<label class="bk"><input type="checkbox" data-audu="${esc(m.id)}" ${S.audSel[m.id]?'checked':''}> ${esc(m.name||'Unnamed')}</label>`).join('')}</div>`:'<p class="sub" style="margin:0 0 .4rem">You have no DG members yet.</p>';
+  if(S.audMode==='brg')h+=`<p class="sub" style="margin:0 0 .6rem">Pick anyone using the tracker, leaders and members from any DG. Each person gets this plan in their Daily Bread and ticks off their own days. You'll be reading it too.</p><input id="brgQ" placeholder="Search by name or DG" value="${esc(S.brgQ)}" autocomplete="off"><div class="books" id="brgList" style="max-height:220px;margin-top:.5rem"></div><p class="sub" id="brgCount" style="margin:.5rem 0 0"></p>`;
   $('audList').innerHTML=h;
+  if(S.audMode==='brg')renderBrgList();
+}
+function updBrgCount(){
+  const c=Object.values(S.brgSel).filter(Boolean).length,el=$('brgCount');
+  if(el)el.textContent=c?`${c} ${c===1?'person':'people'} selected, plus you.`:'No one selected yet.';
+}
+function renderBrgList(){
+  const q=S.brgQ.trim().toLowerCase();
+  const ms=people().filter(x=>x.uid!==S.uid).filter(x=>!q||(x.name||'').toLowerCase().includes(q)||(x.dgName||'').toLowerCase().includes(q)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  $('brgList').innerHTML=ms.length?ms.map(x=>`<label class="bk"><input type="checkbox" data-brgu="${esc(x.uid)}" ${S.brgSel[x.uid]?'checked':''}><span style="flex:1;min-width:0">${esc(x.name||'Unnamed')}${x.role==='leader'?' <span class="tag warn">leader</span>':''}</span><span class="lbsub">${esc(x.dgName)}</span></label>`).join(''):'<div class="empty" style="border:0;padding:1rem">No one found.</div>';
+  updBrgCount();
 }
 $('audBox').addEventListener('click',e=>{const c=e.target.closest('[data-aud]');if(!c)return;S.audMode=c.dataset.aud;renderAudience()});
-$('audBox').addEventListener('change',e=>{const u=e.target.dataset.audu;if(u)S.audSel[u]=e.target.checked});
+$('audBox').addEventListener('change',e=>{const u=e.target.dataset.audu,b=e.target.dataset.brgu;if(u)S.audSel[u]=e.target.checked;if(b){S.brgSel[b]=e.target.checked;updBrgCount()}});
+$('audBox').addEventListener('input',e=>{if(e.target.id==='brgQ'){S.brgQ=e.target.value;renderBrgList()}});
 
 async function create(){
   const msg=$('msg'),name=$('pName').value.trim(),start=$('pStart').value;
@@ -737,13 +752,18 @@ async function create(){
   }
   if(!(days>=1&&days<=366))return msg.textContent=perday?'That pace makes a plan longer than 366 days. Try more chapters per day.':'Days must be between 1 and 366.';
   if(!start)return msg.textContent='Please choose a start date.';
-  const assign=S.me.role==='leader'&&S.audMode!=='me';
+  const mode=S.audMode,isL=S.me.role==='leader';
+  const assign=isL&&(mode==='all'||mode==='some'),brg=mode==='brg';
   let targets=[];
   if(assign){
-    targets=dgMembers().filter(m=>S.audMode==='all'||S.audSel[m.id]);
-    if(!targets.length)return msg.textContent=S.audMode==='all'?'You have no DG members yet.':'Please select at least one member.';
+    targets=dgMembers().filter(m=>mode==='all'||S.audSel[m.id]);
+    if(!targets.length)return msg.textContent=mode==='all'?'You have no DG members yet.':'Please select at least one member.';
   }
-  const p={uid:S.uid,dgId:S.me.dgId,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+  if(brg){
+    targets=people().filter(x=>S.brgSel[x.uid]&&x.uid!==S.uid).map(x=>({id:x.uid,name:x.name}));
+    if(!targets.length)return msg.textContent='Please pick at least one person for your Bible Reading Group.';
+  }
+  const p={uid:S.uid,name,days,start,notes:$('pNotes').value.trim(),done:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()};
   if(segs.length)p.segs=segs;
   if(perday)p.perDay=per;
   msg.textContent='';$('create').disabled=true;
@@ -758,25 +778,52 @@ async function create(){
       }
       $('pName').value='';$('pNotes').value='';S.audMode='me';S.audSel={};S.editPlan=null;S.del=null;setTab('me');
       toast(`Plan assigned to ${sent} member${sent===1?'':'s'}.`);
+    }else if(brg){
+      // a Bible Reading Group: everyone (including you) gets their own copy and ticks their own days
+      const gid=db.collection('plans').doc().id,myRef=db.collection('plans').doc();
+      const names=[S.me.name||'Me',...targets.map(t=>t.name||'Friend')].slice(0,30).map(x=>String(x).slice(0,30));
+      const shared={groupId:gid,groupBy:S.uid,groupByName:S.me.name||'',groupNames:names,groupCount:targets.length+1};
+      const docs=[[myRef,{...p,...shared}],...targets.map(t=>[db.collection('plans').doc(),{...p,...shared,uid:t.id}])];
+      for(let i=0;i<docs.length;i+=10){
+        const b=db.batch(),chunk=docs.slice(i,i+10);
+        chunk.forEach(([ref,d])=>b.set(ref,d));
+        await b.commit();sent+=chunk.length;
+      }
+      $('pName').value='';$('pNotes').value='';S.audMode='me';S.brgSel={};S.brgQ='';S.sel=myRef.id;S.editPlan=null;S.del=null;setTab('me');
+      toast(`Bible Reading Group started with ${targets.length} other${targets.length===1?'':'s'}.`);
     }else{
       const ref=await db.collection('plans').add(p);
       $('pName').value='';$('pNotes').value='';S.sel=ref.id;S.editPlan=null;S.del=null;setTab('me');toast('Plan created.');
     }
-  }catch(e){msg.textContent=assign&&sent?`Assigned to ${sent} of ${targets.length} members before an error. Please check the Leader Dashboard before trying again.`:(assign?'Could not assign the plan. Please try again.':'Could not save your plan. Please try again.')}
+  }catch(e){msg.textContent=sent?`Shared with ${sent} of ${assign?targets.length:targets.length+1} before an error. Please check before trying again.`:(assign?'Could not assign the plan. Please try again.':brg?'Could not create the group plan. Please try again.':'Could not save your plan. Please try again.')}
   $('create').disabled=false;
 }
 $('create').addEventListener('click',create);
 
+const tsOf=p=>(p&&p.createdAt&&p.createdAt.toMillis)?p.createdAt.toMillis():Date.now();
+// Replace a container's HTML without losing the page scroll or any inner day-list scroll
+function setHtml(el,html){
+  const y=window.scrollY,inner=[...el.querySelectorAll('.days[data-sk]')].map(d=>[d.dataset.sk,d.scrollTop]);
+  el.innerHTML=html;
+  if(inner.length){const now=[...el.querySelectorAll('.days[data-sk]')];inner.forEach(([k,top])=>{const d=now.find(x=>x.dataset.sk===k);if(d)d.scrollTop=top})}
+  if(Math.abs(window.scrollY-y)>1)window.scrollTo(0,y);
+}
+function groupWith(p){
+  const names=(p.groupNames||[]).slice(),i=names.indexOf(S.me.name);
+  if(i>=0)names.splice(i,1);
+  return names.slice(0,4).map(esc).join(', ')+(names.length>4?` +${names.length-4} more`:'');
+}
 function renderMe(){
   const ps=S.plans;
-  if(!ps.length){$('plansCol').innerHTML='<div class="card"><div class="empty">No reading plan yet.<br>Create your first plan to begin your journey through Scripture.<br><button class="btn small" data-tab="create" style="margin-top:1rem">Create a Plan</button></div></div>';return}
+  if(!ps.length){setHtml($('plansCol'),'<div class="card"><div class="empty">No reading plan yet.<br>Create your first plan to begin your journey through Scripture.<br><button class="btn small" data-tab="create" style="margin-top:1rem">Create a Plan</button></div></div>');return}
   if(!ps.some(p=>p.id===S.sel))S.sel=ps[0].id;
   const p=ps.find(x=>x.id===S.sel),t=todayIdx(p),[st,cl]=status(p);
   const chips=ps.map(x=>`<button class="chip ${x.id===S.sel?'on':''}" data-sel="${x.id}">${esc(x.name)}</button>`).join('');
   const editing=S.editPlan===p.id;
+  const isCreator=p.groupBy===S.uid;
   const headHtml=editing
-    ?`<div class="head"><div style="flex:1;min-width:220px"><label style="margin-top:0" for="ePName">Plan title</label><input id="ePName" value="${esc(p.name)}" maxlength="70"><label for="ePNotes">Notes (optional)</label><textarea id="ePNotes" maxlength="300" placeholder="Focus, prayer points, or questions to reflect on">${esc(p.notes||'')}</textarea><div style="margin-top:.8rem;display:flex;gap:.5rem"><button class="btn small" data-saveedit="${p.id}">Save changes</button><button class="btn ghost small" data-canceledit="1">Cancel</button></div></div><div class="pct">${pct(p)}%</div></div>`
-    :`<div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days${p.perDay?` · ${p.perDay} ch/day`:''}<span class="tag ${cl}">${st}</span>${p.assignedByName?`<span class="tag mu">From ${esc(p.assignedByName)}</span>`:''}</div></div><div class="pct">${pct(p)}%</div></div>`;
+    ?`<div class="head"><div style="flex:1;min-width:220px"><label style="margin-top:0" for="ePName">Plan title</label><input id="ePName" value="${esc(p.name)}" maxlength="70"><label for="ePNotes">Notes (optional)</label><textarea id="ePNotes" maxlength="300" placeholder="Focus, prayer points, or questions to reflect on">${esc(p.notes||'')}</textarea>${p.groupId&&isCreator?'<div class="sub" style="margin:.5rem 0 0">Changes apply to everyone in your reading group.</div>':''}<div style="margin-top:.8rem;display:flex;gap:.5rem"><button class="btn small" data-saveedit="${p.id}">Save changes</button><button class="btn ghost small" data-canceledit="1">Cancel</button></div></div><div class="pct">${pct(p)}%</div></div>`
+    :`<div class="head"><div><h2>${esc(p.name)}</h2><div class="sub" style="margin:0">${esc(portion(p))} · ${p.days} days${p.perDay?` · ${p.perDay} ch/day`:''}<span class="tag ${cl}">${st}</span>${p.assignedByName?`<span class="tag mu">From ${esc(p.assignedByName)}</span>`:''}${p.groupBy?'<span class="tag mu">Reading group</span>':''}</div>${p.groupBy?`<div class="sub" style="margin:.4rem 0 0">Reading together with ${groupWith(p)}</div>`:''}</div><div class="pct">${pct(p)}%</div></div>`;
   let td='';
   const done=p.done||[];
   if(done.length>=p.days)td='<div class="today"><small>Well done</small><b>You have completed this plan.</b></div>';
@@ -785,49 +832,76 @@ function renderMe(){
   const rows=Array.from({length:p.days},(_,i)=>{
     const d=done.includes(i);
     return `<button class="day ${d?'done':''} ${i===t?'now':''}" data-day="${i}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></button>`}).join('');
-  const actionsHtml=p.assignedBy?`<div class="sub" style="margin:1.1rem 0 0">Assigned by ${esc(p.assignedByName||'your DG leader')}. Only your leader can edit or remove this plan — you can still tick off your days.</div>`:`<div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap"><button class="btn ghost small" data-edit="${p.id}">✎ Edit title &amp; notes</button><span>${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm delete</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">Delete plan</button>`}</span></div>`;
-  $('plansCol').innerHTML=`<div class="chips">${chips}</div>
+  const delRow=`<span>${S.del===p.id?`<button class="btn ghost small del" data-del="${p.id}">Confirm ${p.groupBy&&!isCreator?'leave':'delete'}</button> <button class="btn ghost small" data-cancel="1">Cancel</button>`:`<button class="btn ghost small del" data-del="${p.id}">${p.groupBy&&!isCreator?'Leave this reading group':'Delete plan'}</button>`}</span>`;
+  const actionsHtml=p.assignedBy
+    ?`<div class="sub" style="margin:1.1rem 0 0">Assigned by ${esc(p.assignedByName||'your DG leader')}. Only your leader can edit or remove this plan — you can still tick off your days.</div>`
+    :(p.groupBy&&!isCreator
+      ?`<div class="sub" style="margin:1.1rem 0 .6rem">Shared by ${esc(p.groupByName||'a friend')}. Tick off your own days; only ${esc((p.groupByName||'they').split(' ')[0])} can edit the title and notes.</div><div style="text-align:right">${delRow}</div>`
+      :`<div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap"><button class="btn ghost small" data-edit="${p.id}">✎ Edit title &amp; notes</button>${delRow}</div>`);
+  setHtml($('plansCol'),`<div class="chips">${chips}</div>
   <div class="card">
     ${headHtml}
     <div class="bar"><i style="width:${pct(p)}%"></i></div>
     <div class="sub" style="margin:.5rem 0 0">${done.length} of ${p.days} days completed</div>
     ${(!editing&&p.notes)?`<div class="sub" style="margin:.8rem 0 0;font-style:italic">"${esc(p.notes)}"</div>`:''}
     ${td}
-    <div class="days">${rows}</div>
+    <div class="days" data-sk="me:${p.id}">${rows}</div>
     ${actionsHtml}
-  </div>`;
+  </div>`);
+  if(S._daysPlan!==p.id){ // first time we show this plan: bring today's reading into view
+    S._daysPlan=p.id;
+    const box=$('plansCol').querySelector('.days'),row=box&&box.querySelector('.day.now');
+    if(row)box.scrollTop=Math.max(0,row.offsetTop-box.offsetTop-70);
+  }
 }
 
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit],[data-accept],[data-decline],[data-cancelreq],[data-aedit],[data-asave],[data-acancel],[data-adel]');if(!t)return;
-  if(t.dataset.tab)return setTab(t.dataset.tab);
+  const t=e.target.closest('[data-tab],[data-sel],[data-day],[data-del],[data-cancel],[data-open],[data-poke],[data-edit],[data-saveedit],[data-canceledit],[data-opendg],[data-dgedit],[data-accept],[data-decline],[data-cancelreq],[data-aedit],[data-asave],[data-acancel],[data-adel],[data-leave2],[data-reqjoin]');if(!t)return;
+  if(t.dataset.tab){if(t.dataset.tab==='dash')S.dashDg=null;return setTab(t.dataset.tab)}
   if(t.dataset.cancelreq)return db.collection('joinRequests').doc(S.uid).delete().catch(()=>toast('Could not update your request.'));
   if(t.dataset.decline)return db.collection('joinRequests').doc(t.dataset.decline).update({status:'declined'}).then(()=>toast('Request declined.')).catch(()=>toast('Could not decline. Please try again.'));
   if(t.dataset.accept){
     const id=t.dataset.accept;t.disabled=true;
     try{
       const b=db.batch();
-      b.update(db.collection('users').doc(id),{dgId:S.uid});
+      const who=S.members[id],field=(who&&who.role==='leader')?'memberDgId':'dgId'; // a leader joins as a member of a second DG
+      b.update(db.collection('users').doc(id),{[field]:S.uid});
       b.delete(db.collection('joinRequests').doc(id));
       await b.commit();toast('Accepted. They are now in your DG.');
     }catch(err){toast('Could not accept. Please try again.');t.disabled=false}
     return;
   }
-  if(t.dataset.aedit){S.aEdit=t.dataset.aedit;S.aDel=null;return renderLeader()}
-  if(t.dataset.acancel){S.aEdit=null;S.aDel=null;return renderLeader()}
+  if(t.dataset.aedit){S.aEdit=t.dataset.aedit;S.aDel=null;return renderDash()}
+  if(t.dataset.acancel){S.aEdit=null;S.aDel=null;return renderDash()}
   if(t.dataset.asave){
     const nm=$('aName').value.trim();
     if(!nm)return toast('Plan title cannot be empty.');
-    try{await db.collection('plans').doc(t.dataset.asave).update({name:nm,notes:$('aNotes').value.trim()});S.aEdit=null;renderLeader();toast('Plan updated for the member.')}
+    try{await db.collection('plans').doc(t.dataset.asave).update({name:nm,notes:$('aNotes').value.trim()});S.aEdit=null;renderDash();toast('Plan updated for the member.')}
     catch(err){toast('Could not save changes. Please try again.')}
     return;
   }
   if(t.dataset.adel){
-    if(S.aDel!==t.dataset.adel){S.aDel=t.dataset.adel;return renderLeader()}
+    if(S.aDel!==t.dataset.adel){S.aDel=t.dataset.adel;return renderDash()}
     try{await db.collection('plans').doc(S.aDel).delete();toast('Plan deleted.')}catch(err){toast('Could not delete. Please try again.')}
     S.aDel=null;return;
   }
-  if(t.dataset.opendg)return setTab(S.me.role==='leader'?'leader':'board');
+  if(t.dataset.opendg){S.dashDg=t.dataset.opendg;return setTab('dash')}
+  if(t.dataset.leave2){
+    try{await db.collection('users').doc(S.uid).update({memberDgId:firebase.firestore.FieldValue.delete()});toast('You left that DG.')}
+    catch(err){toast('Could not leave. Please try again.')}
+    return;
+  }
+  if(t.dataset.reqjoin){
+    const g=groups().find(x=>x.id===t.dataset.reqjoin);if(!g)return;
+    if(S.myReq&&S.myReq.status==='pending')return toast('You already have a pending request. Cancel it first.');
+    if(S.me.role==='leader'&&S.me.memberDgId)return toast('You can join only one other DG. Leave it first.');
+    t.disabled=true;
+    try{
+      await db.collection('joinRequests').doc(S.uid).set({uid:S.uid,name:S.me.name||'',photoURL:S.me.photoURL||'',toDg:g.id,toDgName:g.name,toLeaderName:g.leader.name||'the DG leader',fromDgName:dgName()||'',status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      toast(`Request sent. ${g.leader.name||'The DG leader'} will review it.`);
+    }catch(err){toast('Could not send your request. Please try again.')}
+    t.disabled=false;return;
+  }
   if(t.dataset.dgedit)return openDg(true);
   if(t.dataset.edit){S.editPlan=t.dataset.edit;S.del=null;return renderMe()}
   if(t.dataset.canceledit){S.editPlan=null;return renderMe()}
@@ -835,7 +909,11 @@ document.addEventListener('click',async e=>{
     const nm=$('ePName').value.trim();
     if(!nm)return toast('Plan title cannot be empty.');
     try{
-      await db.collection('plans').doc(t.dataset.saveedit).update({name:nm,notes:$('ePNotes').value.trim()});
+      const nt=$('ePNotes').value.trim(),cur=S.plans.find(x=>x.id===t.dataset.saveedit);
+      if(cur&&cur.groupId&&cur.groupBy===S.uid){ // a Bible Reading Group plan: update everyone's copy
+        const q=await db.collection('plans').where('groupId','==',cur.groupId).where('groupBy','==',S.uid).get();
+        const b=db.batch();q.docs.forEach(d=>b.update(d.ref,{name:nm,notes:nt}));await b.commit();
+      }else await db.collection('plans').doc(t.dataset.saveedit).update({name:nm,notes:nt});
       S.editPlan=null;renderMe();toast('Plan updated.');
     }catch(err){toast('Could not save changes. Please try again.')}
     return;
@@ -849,148 +927,160 @@ document.addEventListener('click',async e=>{
   if(t.dataset.day!==undefined){
     const p=S.plans.find(x=>x.id===S.sel),i=+t.dataset.day,arr=(p.done||[]).slice(),k=arr.indexOf(i);
     k<0?arr.push(i):arr.splice(k,1);arr.sort((a,b)=>a-b);
-    await db.collection('plans').doc(p.id).update({done:arr,lastReadAt:firebase.firestore.FieldValue.serverTimestamp()});
+    p.done=arr;renderMe(); // show the tick instantly; the list keeps its scroll position
+    try{await db.collection('plans').doc(p.id).update({done:arr,lastReadAt:firebase.firestore.FieldValue.serverTimestamp()})}
+    catch(err){toast('Could not save that day. Please try again.')}
     return;
   }
-  if(t.dataset.open){S.open[t.dataset.open]=!S.open[t.dataset.open];renderLeader()}
+  if(t.dataset.open){S.open[t.dataset.open]=!S.open[t.dataset.open];if(S.tab==='dash')renderDash();else renderTab();}
   if(t.dataset.poke)return sendPoke(t.dataset.poke,t);
 });
 
-/* ---------------- GLOBAL LEADERBOARD ---------------- */
-// Each person publishes a small summary of their OWN progress to leaderboard/{uid}.
-// Emails and individual plans stay private to the DG; only this summary is visible to everyone.
-function syncBoard(){
-  if(!S.uid||!S.me||!S.me.dgId||!S.plansLoaded)return;
-  const dn=dgName();if(!dn)return; // wait until the DG name has loaded
-  const data={uid:S.uid,name:S.me.name||'',photoURL:S.me.photoURL||'',role:S.me.role,dgId:S.me.dgId,dgName:dn,
-    avg:avgPct(S.plans),plans:S.plans.length,daysDone:S.plans.reduce((t,p)=>t+(p.done||[]).length,0)};
-  const key=JSON.stringify(data);
-  if(key===S._lastBoard)return;
-  S._lastBoard=key;
-  db.collection('leaderboard').doc(S.uid).set({...data,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{S._lastBoard=null});
-}
-function globalGroups(){
-  const g={};
-  S.global.forEach(r=>{if(!r.dgId)return;(g[r.dgId]=g[r.dgId]||{id:r.dgId,name:r.dgName||'Unnamed DG',rows:[]}).rows.push(r)});
-  return Object.values(g).map(x=>{
-    x.plans=x.rows.reduce((t,r)=>t+(r.plans||0),0);
-    x.avg=x.plans?Math.round(x.rows.reduce((t,r)=>t+(r.avg||0)*(r.plans||0),0)/x.plans):0;
-    x.days=x.rows.reduce((t,r)=>t+(r.daysDone||0),0);
-    x.reading=x.rows.filter(r=>(r.plans||0)>0).length;
-    const l=x.rows.find(r=>r.role==='leader');x.leaderName=l?l.name:'';
-    return x;
+/* ---------------- PEOPLE, GLOBAL VIEW, DG DASHBOARD ---------------- */
+// Everyone can look at everyone's plans and progress (read-only). No rankings: it is about encouraging one another.
+function people(){
+  return Object.values(S.members).filter(m=>m.name).map(m=>{
+    const ps=S.allPlans[m.id]||[],g=S.members[m.dgId],g2=m.memberDgId&&S.members[m.memberDgId];
+    return {uid:m.id,name:m.name,photoURL:m.photoURL,role:m.role,dgId:m.dgId||null,memberDgId:m.memberDgId||null,
+      dgName:(g&&g.dgName)||'',dg2Name:(g2&&g2.dgName)||'',ps,plans:ps.length,avg:avgPct(ps),
+      daysDone:ps.reduce((t,p)=>t+(p.done||[]).length,0),
+      last:Math.max(0,...ps.map(p=>(p.lastReadAt&&p.lastReadAt.toMillis)?p.lastReadAt.toMillis():0))};
   });
 }
-const byProgress=(a,b)=>(b.avg-a.avg)||((b.days||b.daysDone||0)-(a.days||a.daysDone||0))||(String(a.name||'')).localeCompare(String(b.name||''));
-function personRows(rows,showDg){
-  const medals=['🥇','🥈','🥉'];
-  return rows.slice().sort(byProgress).map((r,i)=>{
-    const mine=r.uid===S.uid;
-    return `<div class="lbrow">
-      <div class="rank">${medals[i]||(i+1)}</div>
-      <img src="${esc(r.photoURL||'')}" alt="" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
-      <div style="flex:1;min-width:0"><div class="lbname">${esc(r.name||'Unnamed')}${r.role==='leader'?' <span class="tag warn">leader</span>':''}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${showDg?esc(r.dgName||'')+' · ':''}${r.plans||0} plan${r.plans===1?'':'s'} · ${r.avg||0}% average · ${r.daysDone||0} day${r.daysDone===1?'':'s'} read</div></div>
-      <div class="lbbar bar"><i style="width:${r.avg||0}%"></i></div>
-    </div>`;
-  }).join('');
+function whenTxt(ms,hasPlans){
+  if(!hasPlans)return 'no plan yet';
+  if(!ms)return 'not started yet';
+  const d=new Date(ms),t=new Date();t.setHours(0,0,0,0);
+  const days=Math.round((t-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+  if(days<=0)return 'read today';
+  if(days===1)return 'read yesterday';
+  return 'last read '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+function dgLine(m){
+  const a=S.members[m.dgId],b=m.memberDgId&&S.members[m.memberDgId];
+  return ((a&&a.dgName)||'No DG yet')+(b&&b.dgName?' · also in '+b.dgName:'');
+}
+function pokeBtn(uid){
+  if(!uid||uid===S.uid)return '';
+  return `<button class="btn ghost poke" data-poke="${esc(uid)}" data-tip="Each poke sends a real email, and we only have 200 a month for everyone here. Choose wisely!">👋 Poke</button>`;
+}
+function nameTags(m){return `${m.role==='leader'?' <span class="tag warn">leader</span>':''}${m.id===S.uid?' <span class="tag mu">you</span>':''}`}
+function updatePokeNote(){
+  const v=S.tab==='dash'?$('dashView'):S.tab==='global'?$('globalView'):null;
+  $('pokeNote').classList.toggle('hide',!(v&&v.querySelector('[data-poke]'))||S.pokeNoteHidden);
+}
+$('pokeNoteX').addEventListener('click',()=>{S.pokeNoteHidden=true;updatePokeNote()});
+
+function planReadOnly(m,p){
+  const k=m.id+'/'+p.id,[st,cl]=status(p),done=p.done||[],mine=p.assignedBy===S.uid,t=todayIdx(p);
+  if(mine&&S.aEdit===p.id)return `<div class="pl" style="cursor:default"><label style="margin-top:0" for="aName">Plan title</label><input id="aName" value="${esc(p.name)}" maxlength="70"><label for="aNotes">Notes (optional)</label><textarea id="aNotes" maxlength="300">${esc(p.notes||'')}</textarea><div style="margin-top:.7rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-asave="${p.id}">Save changes</button><button class="btn ghost small" data-acancel="1">Cancel</button></div><div class="sub" style="margin:.6rem 0 0">The title and notes update for ${esc(m.name||'this member')}. Their progress is kept.</div></div>`;
+  let today;
+  if(done.length>=p.days)today='Completed. Well done! 🎉';
+  else if(t<0)today='Begins '+dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  else{const i=Math.min(t,p.days-1);today=`Today · Day ${i+1}: <b>${esc(reading(p,i))}</b>`}
+  const open=!!S.open[k];
+  const list=open?`<div class="days" data-sk="${esc(k)}" style="max-height:260px;margin-top:.8rem">${Array.from({length:p.days},(_,i)=>{const d=done.includes(i);return `<div class="day ro ${d?'done':''} ${i===t?'now':''}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div>`}).join('')}</div>`:'';
+  const acts=mine?`<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.1rem 0 .3rem"><button class="btn ghost small" data-aedit="${p.id}">✎ Edit</button>${S.aDel===p.id?`<button class="btn ghost small del" data-adel="${p.id}">Confirm delete</button><button class="btn ghost small" data-acancel="1">Cancel</button><span class="lbsub">This removes the plan and their progress on it.</span>`:`<button class="btn ghost small del" data-adel="${p.id}">Delete</button>`}</div>`:'';
+  return `<div class="pl" style="cursor:default"><div data-open="${esc(k)}" style="cursor:pointer"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span>${mine?'<span class="tag mu">Assigned</span>':''}${p.groupBy?'<span class="tag mu">Reading group</span>':''}<br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div><div class="lbsub" style="margin-top:.45rem">${today}</div>${p.notes?`<div class="lbsub" style="font-style:italic;margin-top:.2rem">"${esc(p.notes)}"</div>`:''}<div class="lbsub" style="color:var(--gold);margin-top:.35rem">${open?'Hide days ▲':'See every day ▼'}</div></div>${list}</div>${acts}`;
+}
+function personInner(m,opts){
+  opts=opts||{};
+  const plans=S.allPlans[m.id]||[];
+  const head=opts.solo
+    ?`<div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem"><div class="lbsub">${esc(dgLine(m))}${m.role==='leader'?' · DG leader':''}</div>${pokeBtn(m.id)}</div>`
+    :`<h3><span>${esc(m.name||'Unnamed')}${nameTags(m)}</span>${pokeBtn(m.id)}</h3>`;
+  return head+(plans.length?plans.map(p=>planReadOnly(m,p)).join(''):'<div class="sub" style="margin-top:.6rem">No plan created yet.</div>');
+}
+
+function globalGroups(){
+  const ppl=people();
+  return groups().map(g=>{
+    const rows=ppl.filter(r=>r.dgId===g.id||r.memberDgId===g.id);
+    return {id:g.id,name:g.name,leaderName:g.leader.name||'',rows,plans:rows.reduce((t,r)=>t+r.plans,0),
+      readToday:rows.filter(r=>whenTxt(r.last,r.plans>0)==='read today').length};
+  });
+}
+function personRow(r){
+  const reading=r.ps.length?'Reading: '+r.ps.slice(0,2).map(p=>portion(p)).join(' · ')+(r.ps.length>2?` +${r.ps.length-2} more`:''):'No plan yet';
+  const w=whenTxt(r.last,r.plans>0);
+  return `<div class="lbrow" style="flex-wrap:wrap">
+    <img src="${esc(r.photoURL||'')}" alt="" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
+    <div style="flex:1;min-width:150px"><div class="lbname">${esc(r.name)}${r.role==='leader'?' <span class="tag warn">leader</span>':''}${r.uid===S.uid?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${esc(r.dgName||'No DG yet')}${r.dg2Name?' · also '+esc(r.dg2Name):''}</div><div class="lbsub">${esc(reading)}${r.plans?' · ':''}${w==='read today'?'<span class="tag ok" style="margin-left:0">read today</span>':(r.plans?esc(w):'')}</div></div>
+    <div style="display:flex;gap:.4rem"><button class="btn ghost poke" data-gu="${esc(r.uid)}">View plans</button>${pokeBtn(r.uid)}</div>
+  </div>`;
 }
 function renderGlobal(){
-  const box=$('globalRows');
-  if(S.globalErr&&!S.global.length){box.innerHTML='<div class="empty">Could not load the leaderboard. Please refresh and try again.</div>';return}
-  const gs=globalGroups();
-  let view=S.viewDg?gs.find(g=>g.id===S.viewDg):null;
-  if(S.viewDg&&!view)S.viewDg=null;
-  if(view){
-    $('gTitle').textContent=view.name;
-    $('gSub').textContent=`${view.leaderName?'Led by '+view.leaderName+' · ':''}${view.rows.length} reader${view.rows.length===1?'':'s'} · ${view.avg}% average completion. A read-only look at how this DG is doing.`;
-    $('gChips').innerHTML='<button class="back" data-gback="1" style="margin:0">← All DGs</button>';
-    box.innerHTML=personRows(view.rows,false);
-    return;
+  const box=$('globalRows'),ppl=people();
+  if(S.globalErr&&!ppl.length){box.innerHTML='<div class="empty">Could not load. Please refresh and try again.</div>';return}
+  if(S.viewUser){
+    const m=S.members[S.viewUser];
+    if(m){
+      $('gTitle').textContent=m.name||'Reader';
+      $('gSub').textContent=`A read-only look at what ${(m.name||'they').split(' ')[0]} is reading.`;
+      $('gChips').innerHTML='<button class="back" data-gback="1" style="margin:0">← Everyone</button>';
+      setHtml(box,personInner(m,{solo:true}));updatePokeNote();return;
+    }
+    S.viewUser=null;
   }
-  $('gTitle').textContent='Global Leaderboard';
-  $('gSub').textContent=S.gTab==='dgs'?'Every Discipleship Group, ranked by average plan completion. Open any DG to see how its members are reading.':'Everyone using the tracker, across every DG — members and leaders together. Ranked by average plan completion.';
+  $('gTitle').textContent='Cloud of Witnesses';
+  $('gSub').textContent=S.gTab==='dgs'?'Every group, gathered. Open one to sit in on what its people are reading.':'Everyone using the tracker, from every DG. Open anyone to see what they are reading. It might just start a conversation.';
   $('gChips').innerHTML=[['people','People'],['dgs','Discipleship Groups']].map(o=>`<button type="button" class="chip ${S.gTab===o[0]?'on':''}" data-g="${o[0]}">${o[1]}</button>`).join('');
-  if(!S.global.length){box.innerHTML='<div class="empty">Nobody is on the board yet.</div>';return}
+  if(!ppl.length){setHtml(box,'<div class="empty">No one has joined yet.</div>');updatePokeNote();return}
   if(S.gTab==='dgs'){
-    const medals=['🥇','🥈','🥉'];
-    box.innerHTML=gs.sort(byProgress).map((g,i)=>{
-      const mine=g.id===S.me.dgId;
-      return `<div class="lbrow">
-        <div class="rank">${medals[i]||(i+1)}</div>
-        <div style="flex:1;min-width:0"><div class="lbname">${esc(g.name)}${mine?' <span class="tag mu">your DG</span>':''}</div><div class="lbsub">${g.leaderName?'Led by '+esc(g.leaderName)+' · ':''}${g.reading} of ${g.rows.length} reading · ${g.plans} plan${g.plans===1?'':'s'} · ${g.avg}% average</div></div>
-        <div class="lbbar bar"><i style="width:${g.avg}%"></i></div>
-        <button class="btn ghost poke" data-gdg="${esc(g.id)}">View</button>
-      </div>`;
-    }).join('');
-  }else box.innerHTML=personRows(S.global,true);
+    setHtml(box,globalGroups().sort((a,b)=>a.name.localeCompare(b.name)).map(g=>`<div class="lbrow" style="flex-wrap:wrap"><div style="flex:1;min-width:150px"><div class="lbname">${esc(g.name)}${g.id===S.me.dgId?' <span class="tag mu">your DG</span>':g.id===S.me.memberDgId?' <span class="tag mu">your other DG</span>':''}</div><div class="lbsub">${g.leaderName?'Led by '+esc(g.leaderName)+' · ':''}${g.rows.length} reader${g.rows.length===1?'':'s'} · ${g.readToday} read today · ${g.plans} plan${g.plans===1?'':'s'}</div></div><button class="btn ghost poke" data-gdg="${esc(g.id)}">Open dashboard</button></div>`).join('')||'<div class="empty">No DGs yet.</div>');
+  }else{
+    setHtml(box,ppl.slice().sort((a,b)=>(b.last-a.last)||(a.name||'').localeCompare(b.name||'')).map(personRow).join(''));
+  }
+  updatePokeNote();
 }
 $('globalView').addEventListener('click',e=>{
-  const c=e.target.closest('[data-g],[data-gdg],[data-gback]');if(!c)return;
-  if(c.dataset.g){S.gTab=c.dataset.g;S.viewDg=null}
-  else if(c.dataset.gdg){S.gTab='dgs';S.viewDg=c.dataset.gdg}
-  else S.viewDg=null;
-  renderGlobal();window.scrollTo(0,0);
-});
-$('dgView').addEventListener('click',e=>{
-  const c=e.target.closest('[data-gopen]');if(!c)return;
-  S.gTab='dgs';S.viewDg=c.dataset.gopen;setTab('global');window.scrollTo(0,0);
+  const c=e.target.closest('[data-g],[data-gdg],[data-gback],[data-gu]');if(!c)return;
+  if(c.dataset.g){S.gTab=c.dataset.g;S.viewUser=null}
+  else if(c.dataset.gdg){S.dashDg=c.dataset.gdg;return setTab('dash')}
+  else if(c.dataset.gu){S.viewUser=c.dataset.gu;window.scrollTo(0,0)}
+  else S.viewUser=null;
+  renderGlobal();
 });
 
-/* ---------------- LEADERBOARD ---------------- */
-function renderBoard(){
-  $('boardTitle').textContent='Leaderboard'+(dgName()?' · '+dgName():'');
-  const rows=Object.values(S.members).filter(m=>(m.role==='member'||m.role==='leader')&&m.dgId===S.me.dgId).map(m=>({m,plans:S.allPlans[m.id]||[]}))
-    .map(x=>({...x,avg:avgPct(x.plans),active:x.plans.length}))
-    .sort((a,b)=>b.avg-a.avg);
-  if(!rows.length){$('boardRows').innerHTML='<div class="empty">Nobody has started a plan yet.</div>';return}
-  const medals=['🥇','🥈','🥉'];
-  $('boardRows').innerHTML=rows.map((r,i)=>{
-    const mine=r.m.id===S.uid;
-    return `<div class="lbrow">
-      <div class="rank">${medals[i]||(i+1)}</div>
-      <img src="${esc(r.m.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)">
-      <div style="flex:1"><div class="lbname">${esc(r.m.name)}${r.m.role==='leader'?' <span class="tag warn">leader</span>':''}${mine?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${r.active} plan${r.active===1?'':'s'} · ${r.avg}% average</div></div>
-      <div class="lbbar bar"><i style="width:${r.avg}%"></i></div>
-      ${mine?'':`<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button>`}
-    </div>`;
-  }).join('');
+/* ---------------- DG DASHBOARD (Upper Room) ---------------- */
+function renderDash(){
+  const id=S.dashDg||S.me.dgId,g=groups().find(x=>x.id===id),box=$('dashView');
+  if(!g){setHtml(box,'<div class="card"><div class="empty">Gathering your group…<br>If this stays here, your DG may not be set up yet.</div></div>');updatePokeNote();return}
+  const own=id===S.uid;
+  const rows=[g.leader,...g.members.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''))].map(m=>({m,plans:S.allPlans[m.id]||[]}));
+  const all=rows.flatMap(r=>r.plans),avg=avgPct(all);
+  const needs=rows.filter(r=>r.plans.some(p=>['bad','warn'].includes(status(p)[1]))).length;
+  const mineIds=[S.me.dgId,S.me.memberDgId].filter(Boolean);
+  const nav=mineIds.length>1?`<div class="chips" style="margin:0 0 1rem">${mineIds.map(i=>{const x=S.members[i];return `<button class="chip ${i===id?'on':''}" data-opendg="${esc(i)}">${esc((x&&x.dgName)||'DG')}</button>`}).join('')}</div>`:'';
+  const back=(!mineIds.includes(id)&&S.me.dgId)?`<button class="btn ghost small" data-opendg="${esc(S.me.dgId)}">← Back to my DG</button>`:'';
+  const reqCard=(own&&S.me.role==='leader'&&S.requests.length)?`<div class="card" style="margin-bottom:1.5rem;border-color:var(--gold)"><h2>Join requests</h2><p class="sub">These people asked to join ${esc(g.name)}. They join once you accept.</p>${S.requests.map(q=>`<div class="lbrow"><img src="${esc(q.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)"><div style="flex:1"><div class="lbname">${esc(q.name||'Unnamed')}</div><div class="lbsub">${q.fromDgName?'Currently in '+esc(q.fromDgName):'New to the tracker'}</div></div><button class="btn small" data-accept="${esc(q.id)}">Accept</button> <button class="btn ghost small" data-decline="${esc(q.id)}">Decline</button></div>`).join('')}</div>`:'';
+  let h=nav+`<div class="head" style="margin-bottom:1rem"><div><h2>${esc(g.name)}</h2><div class="sub" style="margin:0">Led by <b>${esc(g.leader.name||'Unnamed')}</b> · ${rows.length} reader${rows.length===1?'':'s'}${mineIds.includes(id)?'':' · you are visiting'}</div></div>${back}</div>${reqCard}<div class="stats"><div class="stat"><b>${rows.length}</b><span>Readers</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
+  rows.forEach(r=>{h+=`<div class="card mem">${personInner(r.m)}</div>`});
+  setHtml(box,h);updatePokeNote();
 }
 
-/* ---------------- LEADER DASHBOARD ---------------- */
-function renderLeader(){
-  const rows=Object.values(S.members).filter(m=>m.role==='member'&&m.dgId===S.me.dgId).map(m=>({m,plans:S.allPlans[m.id]||[]})).sort((a,b)=>(a.m.name||'').localeCompare(b.m.name||''));
-  const all=rows.flatMap(r=>r.plans),avg=all.length?Math.round(all.reduce((s,p)=>s+pct(p),0)/all.length):0;
-  const needs=rows.filter(r=>r.plans.some(p=>status(p)[1]==='bad'||status(p)[1]==='warn')).length;
-  const reqCard=S.requests.length?`<div class="card" style="margin-bottom:1.5rem;border-color:var(--gold)"><h2>Join requests</h2><p class="sub">These people asked to join ${esc(dgName())}. They can only see your DG once you accept.</p>${S.requests.map(q=>`<div class="lbrow"><img src="${esc(q.photoURL||'')}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)"><div style="flex:1"><div class="lbname">${esc(q.name||'Unnamed')}</div><div class="lbsub">${q.fromDgName?'Currently in '+esc(q.fromDgName):'New to the tracker'}</div></div><button class="btn small" data-accept="${esc(q.id)}">Accept</button> <button class="btn ghost small" data-decline="${esc(q.id)}">Decline</button></div>`).join('')}</div>`:'';
-  let h=`<h2 style="margin-bottom:1rem">${esc(dgName())}</h2>${reqCard}<div class="stats"><div class="stat"><b>${rows.length}</b><span>Members</span></div><div class="stat"><b>${all.length}</b><span>Active plans</span></div><div class="stat"><b>${avg}%</b><span>Average completion</span></div><div class="stat"><b>${needs}</b><span>Needing encouragement</span></div></div>`;
-  if(!rows.length)h+='<div class="card"><div class="empty">No member has created a plan yet.<br>Progress will appear here as your group begins reading.</div></div>';
-  rows.forEach(r=>{
-    h+=`<div class="card mem"><h3>${esc(r.m.name||'Unnamed member')}<button class="btn ghost poke" data-poke="${r.m.id}">👋 Poke</button></h3>`+
-      (r.plans.length?r.plans.map(p=>{
-        const k=r.m.id+'/'+p.id,[st,cl]=status(p),done=p.done||[],mine=p.assignedBy===S.uid;
-        if(mine&&S.aEdit===p.id)return `<div class="pl" style="cursor:default"><label style="margin-top:0" for="aName">Plan title</label><input id="aName" value="${esc(p.name)}" maxlength="70"><label for="aNotes">Notes (optional)</label><textarea id="aNotes" maxlength="300">${esc(p.notes||'')}</textarea><div style="margin-top:.7rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn small" data-asave="${p.id}">Save changes</button><button class="btn ghost small" data-acancel="1">Cancel</button></div><div class="sub" style="margin:.6rem 0 0">The title and notes update for ${esc(r.m.name||'this member')}. Their progress is kept.</div></div>`;
-        const dots=S.open[k]?`<div class="dots">${Array.from({length:p.days},(_,i)=>`<i class="${done.includes(i)?'d':''}" title="${esc(reading(p,i))}">${i+1}</i>`).join('')}</div>`:'';
-        const acts=mine?`<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.1rem 0 .3rem"><button class="btn ghost small" data-aedit="${p.id}">✎ Edit</button>${S.aDel===p.id?`<button class="btn ghost small del" data-adel="${p.id}">Confirm delete</button><button class="btn ghost small" data-acancel="1">Cancel</button><span class="lbsub">This removes the plan and their progress on it.</span>`:`<button class="btn ghost small del" data-adel="${p.id}">Delete</button>`}</div>`:'';
-        return `<div class="pl" data-open="${esc(k)}"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span>${mine?'<span class="tag mu">Assigned</span>':''}<br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div>${dots}</div>${acts}`;
-      }).join(''):'<div class="sub">No plan created yet.</div>');
-    h+='</div>';
-  });
-  $('leaderView').innerHTML=h;
-}
-
+const TAB_VERSE={
+  me:'“Man shall not live by bread alone, but by every word that proceedeth out of the mouth of God.” — Matthew 4:4',
+  dash:'“And they continued stedfastly in the apostles’ doctrine and fellowship, and in breaking of bread, and in prayers.” — Acts 2:42',
+  dgs:'“And there shall be one fold, and one shepherd.” — John 10:16',
+  global:'“Seeing we also are compassed about with so great a cloud of witnesses…” — Hebrews 12:1'
+};
 function setTab(t){
   S.tab=t;
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   $('meView').classList.toggle('hide',t!=='me');
-  $('boardView').classList.toggle('hide',t!=='board');
-  $('leaderView').classList.toggle('hide',t!=='leader');
+  $('dashView').classList.toggle('hide',t!=='dash');
   $('dgView').classList.toggle('hide',t!=='dgs');
   $('globalView').classList.toggle('hide',t!=='global');
   $('createView').classList.toggle('hide',t!=='create');
   $('tabs').classList.toggle('hide',t==='create'); // the create page is its own page: no tab bar
+  $('tabVerse').classList.toggle('hide',t==='create');
+  $('tabVerse').textContent=TAB_VERSE[t]||'';
   $('fabCreate').classList.toggle('hide',t!=='me');
-  if(t==='create'){renderAudience();$('msg').textContent='';$('pStart').value=iso(new Date());window.scrollTo(0,0)}
+  window.scrollTo(0,0);
+  if(t==='create'){renderAudience();$('msg').textContent='';$('pStart').value=iso(new Date())}
   if(t==='me')renderMe();else renderTab();
+  updatePokeNote();
 }
 
 /* ---------------- POKE ---------------- */
@@ -1004,7 +1094,7 @@ async function sendPoke(toUid,btn){
       const last=cd.data().lastAt?.toMillis?.()||0;
       if(Date.now()-last<POKE_COOLDOWN_MS){toast(`You already poked ${to.name.split(' ')[0]} recently — give it a little time.`);btn.disabled=false;return}
     }
-    const fromName=S.me.name||'Someone in your DG';
+    const fromName=S.me.name||'A friend';
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: to.email,
       to_name: to.name || '',
