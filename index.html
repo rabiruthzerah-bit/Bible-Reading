@@ -73,6 +73,7 @@ textarea{resize:vertical;min-height:60px}
 .dots{display:flex;flex-wrap:wrap;gap:5px;margin-top:.8rem}
 .dots i{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);font:600 .66rem/24px var(--sans);text-align:center;font-style:normal;color:var(--muted)}
 .dots i.d{background:var(--navy);border-color:var(--navy);color:var(--card)}
+.dots i.now{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .empty{text-align:center;color:var(--muted);padding:2rem 1rem;border:1px dashed var(--line);border-radius:10px}
 .note{font-size:.78rem;color:var(--muted);text-align:center;margin-top:1.5rem}
 .hide{display:none!important}
@@ -979,9 +980,9 @@ function planReadOnly(m,p){
   else if(t<0)today='Begins '+dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   else{const i=Math.min(t,p.days-1);today=`Today · Day ${i+1}: <b>${esc(reading(p,i))}</b>`}
   const open=!!S.open[k];
-  const list=open?`<div class="days" data-sk="${esc(k)}" style="max-height:260px;margin-top:.8rem">${Array.from({length:p.days},(_,i)=>{const d=done.includes(i);return `<div class="day ro ${d?'done':''} ${i===t?'now':''}"><span class="ck">${d?'✓':''}</span><span class="n">Day ${i+1}</span><span class="rd">${esc(reading(p,i))}</span><span class="dt">${dayOf(p,i).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div>`}).join('')}</div>`:'';
+  const list=open?`<div class="dots">${Array.from({length:p.days},(_,i)=>`<i class="${done.includes(i)?'d':''} ${i===t?'now':''}" title="Day ${i+1}: ${esc(reading(p,i))}">${i+1}</i>`).join('')}</div><div class="lbsub" style="margin-top:.5rem">Filled boxes are days read.</div>`:'';
   const acts=mine?`<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.1rem 0 .3rem"><button class="btn ghost small" data-aedit="${p.id}">✎ Edit</button>${S.aDel===p.id?`<button class="btn ghost small del" data-adel="${p.id}">Confirm delete</button><button class="btn ghost small" data-acancel="1">Cancel</button><span class="lbsub">This removes the plan and their progress on it.</span>`:`<button class="btn ghost small del" data-adel="${p.id}">Delete</button>`}</div>`:'';
-  return `<div class="pl" style="cursor:default"><div data-open="${esc(k)}" style="cursor:pointer"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span>${mine?'<span class="tag mu">Assigned</span>':''}${p.groupBy?'<span class="tag mu">Reading group</span>':''}<br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div><div class="lbsub" style="margin-top:.45rem">${today}</div>${p.notes?`<div class="lbsub" style="font-style:italic;margin-top:.2rem">"${esc(p.notes)}"</div>`:''}<div class="lbsub" style="color:var(--gold);margin-top:.35rem">${open?'Hide days ▲':'See every day ▼'}</div></div>${list}</div>${acts}`;
+  return `<div class="pl" style="cursor:default"><div data-open="${esc(k)}" style="cursor:pointer"><div class="top"><div><b>${esc(p.name)}</b><span class="tag ${cl}">${st}</span>${mine?'<span class="tag mu">Assigned</span>':''}${p.groupBy?'<span class="tag mu">Reading group</span>':''}<br><span>${esc(portion(p))} · started ${dayOf(p,0).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div><b>${pct(p)}%</b> <span>${done.length}/${p.days} days</span></div></div><div class="bar"><i style="width:${pct(p)}%"></i></div><div class="lbsub" style="margin-top:.45rem">${today}</div>${p.notes?`<div class="lbsub" style="font-style:italic;margin-top:.2rem">"${esc(p.notes)}"</div>`:''}<div class="lbsub" style="color:var(--gold);margin-top:.35rem">${open?'Hide progress ▲':'See progress ▼'}</div></div>${list}</div>${acts}`;
 }
 function personInner(m,opts){
   opts=opts||{};
