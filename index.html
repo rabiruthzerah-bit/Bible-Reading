@@ -224,6 +224,7 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
   <button class="tab" data-tab="dash" id="dashTab"><span class="ti">🕯️</span>Upper Room<span class="badge hide" id="reqBadge"></span></button>
   <button class="tab" data-tab="dgs" id="dgsTab"><span class="ti">🐑</span>The Fold</button>
   <button class="tab" data-tab="global" id="globalTab"><span class="ti">☁️</span>Cloud of Witnesses</button>
+  <button class="tab" data-tab="lb" id="lbTab"><span class="ti">🏆</span>Global Leaderboard</button>
 </nav>
 <p class="tabverse" id="tabVerse"></p>
 
@@ -277,6 +278,15 @@ body.leader .card,body.leader .stat{box-shadow:0 1px 2px rgba(0,0,0,.25),0 8px 2
 </section>
 
 <section id="dgView" class="hide"></section>
+
+<section id="lbView" class="hide">
+  <div class="card">
+    <h2>Global Leaderboard</h2>
+    <p class="sub" id="lbSub"></p>
+    <div class="chips" id="lbChips"></div>
+    <div id="lbRows"></div>
+  </div>
+</section>
 
 <section id="globalView" class="hide">
   <div class="card">
@@ -336,7 +346,7 @@ const BOOKS=[["Genesis",50],["Exodus",40],["Leviticus",27],["Numbers",36],["Deut
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S={gTab:'people',viewDg:null,dashDg:null,viewUser:null,brgSel:{},brgQ:'',pokeNoteHidden:false,aEdit:null,aDel:null,audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
+const S={lbTab:'people',gTab:'people',viewDg:null,dashDg:null,viewUser:null,brgSel:{},brgQ:'',pokeNoteHidden:false,aEdit:null,aDel:null,audMode:'me',audSel:{},tab:'me',global:[],globalErr:false,plansLoaded:false,editPlan:null,requests:[],myReq:null,uid:null,me:null,plans:[],sel:null,del:null,members:{},allPlans:{},open:{},unsub:[]};
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200)}
 function iso(d){const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())}
@@ -594,7 +604,7 @@ function renderTab(){
   refreshWho();
   const n=S.requests.length,b=$('reqBadge');
   b.textContent=n;b.classList.toggle('hide',!(S.me.role==='leader'&&n));
-  if(S.tab==='dgs')renderDgs();else if(S.tab==='global')renderGlobal();else if(S.tab==='dash'){if(!S.aEdit)renderDash()}
+  if(S.tab==='dgs')renderDgs();else if(S.tab==='global')renderGlobal();else if(S.tab==='lb')renderLb();else if(S.tab==='dash'){if(!S.aEdit)renderDash()}
 }
 function boot(){
   S.unsub.forEach(u=>u());S.unsub=[];S.globalErr=false;S.plansLoaded=false;S.dashDg=null;S.viewUser=null;S.viewDg=null;S._daysPlan=null;
@@ -938,7 +948,7 @@ document.addEventListener('click',async e=>{
 });
 
 /* ---------------- PEOPLE, GLOBAL VIEW, DG DASHBOARD ---------------- */
-// Everyone can look at everyone's plans and progress (read-only). No rankings: it is about encouraging one another.
+// Everyone can look at everyone's plans and progress (read-only). Cloud of Witnesses is the friendly view; the Global Leaderboard ranks everyone.
 function people(){
   return Object.values(S.members).filter(m=>m.name).map(m=>{
     const ps=S.allPlans[m.id]||[],g=S.members[m.dgId],g2=m.memberDgId&&S.members[m.memberDgId];
@@ -967,7 +977,7 @@ function pokeBtn(uid){
 }
 function nameTags(m){return `${m.role==='leader'?' <span class="tag warn">leader</span>':''}${m.id===S.uid?' <span class="tag mu">you</span>':''}`}
 function updatePokeNote(){
-  const v=S.tab==='dash'?$('dashView'):S.tab==='global'?$('globalView'):null;
+  const v=S.tab==='dash'?$('dashView'):S.tab==='global'?$('globalView'):S.tab==='lb'?$('lbView'):null;
   $('pokeNote').classList.toggle('hide',!(v&&v.querySelector('[data-poke]'))||S.pokeNoteHidden);
 }
 $('pokeNoteX').addEventListener('click',()=>{S.pokeNoteHidden=true;updatePokeNote()});
@@ -1043,6 +1053,30 @@ $('globalView').addEventListener('click',e=>{
   renderGlobal();
 });
 
+/* ---------------- GLOBAL LEADERBOARD ---------------- */
+function renderLb(){
+  const box=$('lbRows'),ppl=people(),medals=['🥇','🥈','🥉'];
+  $('lbChips').innerHTML=[['people','People'],['dgs','Discipleship Groups']].map(o=>`<button type="button" class="chip ${S.lbTab===o[0]?'on':''}" data-lbt="${o[0]}">${o[1]}</button>`).join('');
+  $('lbSub').textContent=S.lbTab==='dgs'?'Every Discipleship Group, ranked by average plan completion. Open one to see how its people are doing.':'Everyone using the tracker, members and leaders from every DG, ranked by average plan completion.';
+  if(S.globalErr&&!ppl.length){setHtml(box,'<div class="empty">Could not load the leaderboard. Please refresh and try again.</div>');updatePokeNote();return}
+  if(!ppl.length){setHtml(box,'<div class="empty">Nobody is on the board yet.</div>');updatePokeNote();return}
+  const cmp=(a,b)=>(b.avg-a.avg)||(b.days-a.days)||String(a.name||'').localeCompare(String(b.name||''));
+  if(S.lbTab==='dgs'){
+    const gs=globalGroups().map(g=>({...g,avg:g.plans?Math.round(g.rows.reduce((t,r)=>t+r.avg*r.plans,0)/g.plans):0,days:g.rows.reduce((t,r)=>t+r.daysDone,0),reading:g.rows.filter(r=>r.plans>0).length})).sort(cmp);
+    setHtml(box,gs.map((g,i)=>`<div class="lbrow" style="flex-wrap:wrap"><div class="rank">${medals[i]||i+1}</div><div style="flex:1;min-width:150px"><div class="lbname">${esc(g.name)}${g.id===S.me.dgId?' <span class="tag mu">your DG</span>':g.id===S.me.memberDgId?' <span class="tag mu">your other DG</span>':''}</div><div class="lbsub">${g.leaderName?'Led by '+esc(g.leaderName)+' · ':''}${g.reading} of ${g.rows.length} reading · ${g.plans} plan${g.plans===1?'':'s'} · ${g.avg}% average · ${g.days} day${g.days===1?'':'s'} read</div></div><div class="lbbar bar"><i style="width:${g.avg}%"></i></div><button class="btn ghost poke" data-lbdg="${esc(g.id)}">Open</button></div>`).join('')||'<div class="empty">No DGs yet.</div>');
+  }else{
+    const rows=ppl.map(r=>({...r,days:r.daysDone})).sort(cmp);
+    setHtml(box,rows.map((r,i)=>`<div class="lbrow" style="flex-wrap:wrap"><div class="rank">${medals[i]||i+1}</div><img src="${esc(r.photoURL||'')}" alt="" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line)"><div style="flex:1;min-width:150px"><div class="lbname">${esc(r.name)}${r.role==='leader'?' <span class="tag warn">leader</span>':''}${r.uid===S.uid?' <span class="tag mu">you</span>':''}</div><div class="lbsub">${esc(r.dgName||'No DG yet')}${r.dg2Name?' · also '+esc(r.dg2Name):''} · ${r.plans?`${r.plans} plan${r.plans===1?'':'s'} · ${r.avg}% average · ${r.daysDone} day${r.daysDone===1?'':'s'} read`:'no plan yet'}</div></div><div class="lbbar bar"><i style="width:${r.avg}%"></i></div><div style="display:flex;gap:.4rem"><button class="btn ghost poke" data-lbu="${esc(r.uid)}">View plans</button>${pokeBtn(r.uid)}</div></div>`).join(''));
+  }
+  updatePokeNote();
+}
+$('lbView').addEventListener('click',e=>{
+  const c=e.target.closest('[data-lbt],[data-lbu],[data-lbdg]');if(!c)return;
+  if(c.dataset.lbt){S.lbTab=c.dataset.lbt;return renderLb()}
+  if(c.dataset.lbu){S.viewUser=c.dataset.lbu;S.gTab='people';return setTab('global')}
+  S.dashDg=c.dataset.lbdg;setTab('dash');
+});
+
 /* ---------------- DG DASHBOARD (Upper Room) ---------------- */
 function renderDash(){
   const id=S.dashDg||S.me.dgId,g=groups().find(x=>x.id===id),box=$('dashView');
@@ -1064,6 +1098,7 @@ const TAB_VERSE={
   me:'“Man shall not live by bread alone, but by every word that proceedeth out of the mouth of God.” — Matthew 4:4',
   dash:'“And they continued stedfastly in the apostles’ doctrine and fellowship, and in breaking of bread, and in prayers.” — Acts 2:42',
   dgs:'“And there shall be one fold, and one shepherd.” — John 10:16',
+  lb:'“So run, that ye may obtain.” — 1 Corinthians 9:24',
   global:'“Seeing we also are compassed about with so great a cloud of witnesses…” — Hebrews 12:1'
 };
 function setTab(t){
@@ -1073,6 +1108,7 @@ function setTab(t){
   $('dashView').classList.toggle('hide',t!=='dash');
   $('dgView').classList.toggle('hide',t!=='dgs');
   $('globalView').classList.toggle('hide',t!=='global');
+  $('lbView').classList.toggle('hide',t!=='lb');
   $('createView').classList.toggle('hide',t!=='create');
   $('tabs').classList.toggle('hide',t==='create'); // the create page is its own page: no tab bar
   $('tabVerse').classList.toggle('hide',t==='create');
